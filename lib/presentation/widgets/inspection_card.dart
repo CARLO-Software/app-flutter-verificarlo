@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:app_flutter_verificarlo/core/constants/app_colors.dart';
 import 'package:app_flutter_verificarlo/data/models/booking_model.dart';
@@ -19,7 +20,9 @@ class InspectionCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          // ponytail: navigate to inspection detail in Fase 2
+          if (booking.reportId != null) {
+            context.push('/inspection/${booking.reportId}');
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -177,7 +180,9 @@ class InspectionCard extends StatelessWidget {
                     const Spacer(),
                     FilledButton.tonal(
                       onPressed: () {
-                        // ponytail: navigate to inspection in Fase 2
+                        if (booking.reportId != null) {
+                          context.push('/inspection/${booking.reportId}');
+                        }
                       },
                       child: Text(
                         booking.mechanicalStatus == 'EN_PROCESO'
@@ -197,7 +202,9 @@ class InspectionCard extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      // ponytail: navigate to report detail in Fase 2
+                      if (booking.reportId != null) {
+                        context.push('/inspection/${booking.reportId}');
+                      }
                     },
                     icon: const Icon(Icons.visibility, size: 18),
                     label: const Text('Ver reporte'),

@@ -14,6 +14,7 @@ class AuthRepository {
     );
 
     final data = response.data;
+    print('Login response data: ${response.data}');
     final token = data['token'] as String;
     final user = UserModel.fromJson(data['user']);
 

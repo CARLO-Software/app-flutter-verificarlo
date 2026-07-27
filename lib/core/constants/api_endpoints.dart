@@ -1,5 +1,5 @@
 class ApiEndpoints {
-  static const String baseUrl = 'https://verificarlo.pe';
+  static const String baseUrl = 'https://www.verificarlo.com';
 
   // Auth
   static const String login = '/api/login';
