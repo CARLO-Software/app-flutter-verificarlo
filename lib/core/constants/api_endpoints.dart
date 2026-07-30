@@ -31,4 +31,8 @@ class ApiEndpoints {
 
   // Photos
   static String photoDelete(int id) => '/api/photos/$id';
+
+  // Device / FCM
+  static const String deviceRegister = '/api/devices/register';
+  static const String deviceUnregister = '/api/devices/unregister';
 }

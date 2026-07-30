@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "49170341055",
+    "project_id": "verificarlo-nextjs",
+    "storage_bucket": "verificarlo-nextjs.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:49170341055:android:c105576108130da0dc3a0a",
+        "android_client_info": {
+          "package_name": "com.verificarlo.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-0hBLAYpHyc8Ix6bYg4Ga4XclX3RD6f0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

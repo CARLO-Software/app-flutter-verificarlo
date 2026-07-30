@@ -2,16 +2,51 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:app_flutter_verificarlo/core/constants/app_colors.dart';
+import 'package:app_flutter_verificarlo/core/services/fcm_service.dart';
 import 'package:app_flutter_verificarlo/data/models/booking_model.dart';
 import 'package:app_flutter_verificarlo/presentation/providers/auth_provider.dart';
 import 'package:app_flutter_verificarlo/presentation/providers/dashboard_provider.dart';
 import 'package:app_flutter_verificarlo/presentation/widgets/inspection_card.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    FcmService.instance.onInspectionReceived = _onNewInspection;
+  }
+
+  @override
+  void dispose() {
+    FcmService.instance.onInspectionReceived = null;
+    super.dispose();
+  }
+
+  void _onNewInspection(Map<String, dynamic> data) {
+    ref.invalidate(pendingInspectionsProvider);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(data['title'] ?? 'Nueva inspección asignada'),
+        backgroundColor: AppColors.primary,
+        action: SnackBarAction(
+          label: 'Ver',
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
     final auth = ref.watch(authProvider);
     final pending = ref.watch(pendingInspectionsProvider);
     final completed = ref.watch(completedInspectionsProvider);

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:app_flutter_verificarlo/data/models/user_model.dart';
 import 'package:app_flutter_verificarlo/data/repositories/auth_repository.dart';
+import 'package:app_flutter_verificarlo/core/services/fcm_service.dart';
 
 final authRepositoryProvider = Provider((_) => AuthRepository());
 
@@ -54,6 +55,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final user = await _repo.login(email, password);
       state = AuthState(status: AuthStatus.authenticated, user: user);
+      await FcmService.instance.registerToken();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -63,6 +65,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    await FcmService.instance.unregisterToken();
     await _repo.logout();
     state = const AuthState(status: AuthStatus.unauthenticated);
   }

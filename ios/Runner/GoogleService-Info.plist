@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyCkncSqZcUm6bZ_O7p70602fbvdn4LHdJI</string>
+	<key>GCM_SENDER_ID</key>
+	<string>49170341055</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.verificarlo.app</string>
+	<key>PROJECT_ID</key>
+	<string>verificarlo-nextjs</string>
+	<key>STORAGE_BUCKET</key>
+	<string>verificarlo-nextjs.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:49170341055:ios:89c5fd9e264d39a7dc3a0a</string>
+</dict>
+</plist>
