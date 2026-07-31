@@ -27,8 +27,11 @@ class ApiClient {
       },
       onError: (error, handler) {
         if (error.response?.statusCode == 401) {
-          // ponytail: clear session on 401, add auto-redirect to login when needed
-          SecureStorage.clearAll();
+          // ponytail: only clear session for non-login 401s, skip device endpoints
+          final path = error.requestOptions.path;
+          if (!path.contains('/devices/')) {
+            SecureStorage.clearAll();
+          }
         }
         handler.next(error);
       },

@@ -5,11 +5,11 @@ import 'package:app_flutter_verificarlo/data/repositories/inspection_repository.
 final inspectionRepositoryProvider = Provider((_) => InspectionRepository());
 
 final pendingInspectionsProvider =
-    FutureProvider<List<BookingModel>>((ref) async {
+    FutureProvider.autoDispose<List<BookingModel>>((ref) async {
   return ref.read(inspectionRepositoryProvider).getPendingInspections();
 });
 
 final completedInspectionsProvider =
-    FutureProvider<List<BookingModel>>((ref) async {
+    FutureProvider.autoDispose<List<BookingModel>>((ref) async {
   return ref.read(inspectionRepositoryProvider).getCompletedInspections();
 });

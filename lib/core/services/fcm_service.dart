@@ -88,7 +88,7 @@ class FcmService {
     try {
       await ApiClient.instance.post(
         ApiEndpoints.deviceRegister,
-        data: {'fcm_token': _token},
+        data: {'token': _token},
       );
       debugPrint('FCM Token registered with backend');
     } catch (e) {

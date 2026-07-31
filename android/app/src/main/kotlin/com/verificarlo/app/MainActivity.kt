@@ -1,4 +1,4 @@
-package com.example.app_flutter_verificarlo
+package com.verificarlo.app
 
 import io.flutter.embedding.android.FlutterActivity
 

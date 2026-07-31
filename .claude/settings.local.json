@@ -5,7 +5,11 @@
       "Bash(flutter pub:*)",
       "Bash(flutter analyze:*)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://www.verificarlo.com/api/login)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(flutter devices:*)",
+      "Bash(flutter run:*)",
+      "Bash(adb kill-server:*)",
+      "Bash(adb start-server:*)"
     ]
   }
 }
