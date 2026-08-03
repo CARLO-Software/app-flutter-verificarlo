@@ -1,3 +1,7 @@
+// ponytail: fuerza UTC cuando el backend omite la Z
+DateTime _parseUtc(String s) =>
+    DateTime.parse(s.endsWith('Z') ? s : '${s}Z').toLocal();
+
 class BookingModel {
   final int id;
   final String status;
@@ -76,7 +80,7 @@ class BookingModel {
       status: json['status'] as String? ?? 'PAID',
       date: json['date'] as String? ?? '',
       timeSlot: json['timeSlot'] as String? ?? '',
-      startTime: DateTime.parse(json['startTime'] as String),
+      startTime: _parseUtc(json['startTime'] as String),
       vehicleBrand: brand,
       vehicleModel: model,
       vehicleYear: vehicle?['year'] as int? ?? 0,

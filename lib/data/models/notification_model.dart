@@ -1,3 +1,7 @@
+// ponytail: fuerza UTC cuando el backend omite la Z
+DateTime _parseUtc(String s) =>
+    DateTime.parse(s.endsWith('Z') ? s : '${s}Z').toLocal();
+
 class NotificationModel {
   final int id;
   final String type;
@@ -25,7 +29,7 @@ class NotificationModel {
         title: json['title'] as String? ?? '',
         message: json['message'] as String? ?? '',
         isRead: json['isRead'] as bool? ?? false,
-        createdAt: DateTime.parse(json['createdAt'] as String),
+        createdAt: _parseUtc(json['createdAt'] as String),
         bookingId: json['bookingId'] as int?,
         reportId: json['reportId'] as int?,
       );
