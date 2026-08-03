@@ -7,6 +7,7 @@ import 'package:app_flutter_verificarlo/presentation/providers/auth_provider.dar
 import 'package:app_flutter_verificarlo/presentation/providers/notification_provider.dart';
 import 'package:app_flutter_verificarlo/presentation/screens/login_screen.dart';
 import 'package:app_flutter_verificarlo/presentation/screens/dashboard_screen.dart';
+import 'package:app_flutter_verificarlo/data/models/booking_model.dart';
 import 'package:app_flutter_verificarlo/presentation/screens/inspection_screen.dart';
 import 'package:app_flutter_verificarlo/presentation/screens/notification_screen.dart';
 import 'package:app_flutter_verificarlo/presentation/screens/schedule_screen.dart';
@@ -59,8 +60,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/inspection/:id',
         builder: (_, state) {
-          final id = int.parse(state.pathParameters['id']!);
-          return InspectionScreen(reportId: id);
+          final booking = state.extra as BookingModel;
+          return InspectionScreen(booking: booking);
         },
       ),
     ],

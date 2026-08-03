@@ -52,8 +52,8 @@ class StatusButtons extends StatelessWidget {
 
   (String, Color) _labelColor(ItemStatus status) => switch (status) {
         ItemStatus.ok => ('OK', AppColors.success),
-        ItemStatus.observacion => ('OBS', AppColors.warning),
-        ItemStatus.defecto => ('DEF', AppColors.error),
-        ItemStatus.noAplica => ('N/A', AppColors.textSecondary),
+        ItemStatus.observacion => ('Observación', AppColors.warning),
+        ItemStatus.defecto => ('Defecto', AppColors.error),
+        ItemStatus.noAplica => ('No aplica', AppColors.textSecondary),
       };
 }

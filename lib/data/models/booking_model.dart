@@ -29,7 +29,8 @@ class BookingModel {
   final String? reportStatus;
   final String? completedAt;
 
-  // Mechanical status
+  // Vehicle inspection
+  final int? vehicleInspectionId;
   final String? mechanicalStatus;
 
   BookingModel({
@@ -50,6 +51,7 @@ class BookingModel {
     this.reportId,
     this.reportStatus,
     this.completedAt,
+    this.vehicleInspectionId,
     this.mechanicalStatus,
   });
 
@@ -93,6 +95,7 @@ class BookingModel {
       reportId: report?['id'] as int?,
       reportStatus: report?['overallStatus'] as String?,
       completedAt: report?['completedAt'] as String?,
+      vehicleInspectionId: inspection?['id'] as int?,
       mechanicalStatus: inspection?['mechanicalStatus'] as String?,
     );
   }

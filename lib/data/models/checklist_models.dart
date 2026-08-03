@@ -37,27 +37,35 @@ class InspectionCategory {
         InspectionCategory(
           type: CategoryType.interior,
           name: 'Interior',
-          weight: 0.00, // ponytail: interior no tiene peso en score, solo informativo según spec (weights sum 100% sin interior)
+          weight: 0.00, // ponytail: interior no tiene peso en score, solo informativo
           items: _interiorItems,
         ),
       ];
 
-  // Legal: 3 estados (sin Defecto)
-  bool get isLegal => type == CategoryType.legal;
-  List<ItemStatus> get allowedStatuses => isLegal
-      ? [ItemStatus.ok, ItemStatus.observacion, ItemStatus.noAplica]
-      : [ItemStatus.ok, ItemStatus.observacion, ItemStatus.defecto, ItemStatus.noAplica];
+  List<ItemStatus> get allowedStatuses =>
+      [ItemStatus.ok, ItemStatus.observacion, ItemStatus.defecto, ItemStatus.noAplica];
+
+  /// Items grouped by subcategory, preserving order.
+  Map<String, List<InspectionItem>> get itemsBySubcategory {
+    final map = <String, List<InspectionItem>>{};
+    for (final item in items) {
+      map.putIfAbsent(item.subcategory, () => []).add(item);
+    }
+    return map;
+  }
 }
 
 class InspectionItem {
   final String id;
   final String name;
+  final String subcategory;
   final List<String> obsChips;
   final List<String> defectoChips;
 
   const InspectionItem({
     required this.id,
     required this.name,
+    required this.subcategory,
     this.obsChips = const [],
     this.defectoChips = const [],
   });
@@ -98,70 +106,93 @@ class ItemResult {
       );
 }
 
-// --- Item definitions ---
+// --- Legal: 11 ítems ---
 
 const _legalItems = [
-  InspectionItem(id: 'leg_01', name: 'SOAT vigente', obsChips: ['Próximo a vencer', 'Cobertura limitada']),
-  InspectionItem(id: 'leg_02', name: 'Revisión técnica vigente', obsChips: ['Próximo a vencer', 'Observaciones previas']),
-  InspectionItem(id: 'leg_03', name: 'Tarjeta de propiedad', obsChips: ['Datos incompletos', 'Duplicado']),
-  InspectionItem(id: 'leg_04', name: 'DNI del titular', obsChips: ['No coincide', 'Vencido']),
-  InspectionItem(id: 'leg_05', name: 'Certificado de gravamen', obsChips: ['Con gravamen', 'No disponible']),
-  InspectionItem(id: 'leg_06', name: 'Contrato de compraventa', obsChips: ['Incompleto', 'Sin firmas']),
-  InspectionItem(id: 'leg_07', name: 'Póliza de seguro', obsChips: ['Cobertura básica', 'Próximo a vencer']),
-  InspectionItem(id: 'leg_08', name: 'Placa de rodaje', obsChips: ['Deteriorada', 'No legible']),
-  InspectionItem(id: 'leg_09', name: 'Stickers y hologramas', obsChips: ['Faltante', 'Deteriorado']),
-  InspectionItem(id: 'leg_10', name: 'Antecedentes policiales', obsChips: ['Con antecedentes', 'No verificado']),
-  InspectionItem(id: 'leg_11', name: 'Penalidades SUNARP', obsChips: ['Con penalidades', 'No verificado']),
+  // Documentación (6)
+  InspectionItem(id: 'leg_01', name: 'Tarjeta de propiedad', subcategory: 'Documentación'),
+  InspectionItem(id: 'leg_02', name: 'Certificado de revisión técnica vehicular', subcategory: 'Documentación'),
+  InspectionItem(id: 'leg_03', name: 'SOAT vigente', subcategory: 'Documentación'),
+  InspectionItem(id: 'leg_04', name: 'Permiso de lunas polarizadas', subcategory: 'Documentación'),
+  InspectionItem(id: 'leg_05', name: 'Manual de instrucciones', subcategory: 'Documentación'),
+  InspectionItem(id: 'leg_06', name: 'Cartilla de servicio', subcategory: 'Documentación'),
+  // Identificación (1)
+  InspectionItem(id: 'leg_07', name: 'Coincidencia VIN / placa', subcategory: 'Identificación'),
+  // Accesorios y elementos obligatorios (4)
+  InspectionItem(id: 'leg_08', name: '2 llaves disponibles', subcategory: 'Accesorios y elementos obligatorios'),
+  InspectionItem(id: 'leg_09', name: 'Llanta de repuesto con herramientas', subcategory: 'Accesorios y elementos obligatorios'),
+  InspectionItem(id: 'leg_10', name: 'Tapa de maletera', subcategory: 'Accesorios y elementos obligatorios'),
+  InspectionItem(id: 'leg_11', name: 'Seguro de aros', subcategory: 'Accesorios y elementos obligatorios'),
 ];
+
+// --- Mecánica: 19 ítems ---
 
 const _mecanicaItems = [
-  InspectionItem(id: 'mec_01', name: 'Estado del motor', obsChips: ['Ruido leve', 'Vibración'], defectoChips: ['Fuga de aceite', 'Golpeteo fuerte', 'No enciende']),
-  InspectionItem(id: 'mec_02', name: 'Nivel de aceite', obsChips: ['Bajo', 'Oscuro'], defectoChips: ['Vacío', 'Contaminado']),
-  InspectionItem(id: 'mec_03', name: 'Nivel de refrigerante', obsChips: ['Bajo', 'Turbio'], defectoChips: ['Vacío', 'Fuga visible']),
-  InspectionItem(id: 'mec_04', name: 'Batería', obsChips: ['Terminales oxidados', 'Carga baja'], defectoChips: ['No carga', 'Inflada', 'Sulfatada']),
-  InspectionItem(id: 'mec_05', name: 'Frenos delanteros', obsChips: ['Desgaste medio', 'Ruido leve'], defectoChips: ['Pastillas gastadas', 'Disco dañado', 'Sin freno']),
-  InspectionItem(id: 'mec_06', name: 'Frenos traseros', obsChips: ['Desgaste medio', 'Ruido leve'], defectoChips: ['Pastillas gastadas', 'Tambor dañado']),
-  InspectionItem(id: 'mec_07', name: 'Freno de mano', obsChips: ['Flojo', 'Recorrido largo'], defectoChips: ['No funciona', 'Cable roto']),
-  InspectionItem(id: 'mec_08', name: 'Suspensión delantera', obsChips: ['Ruido', 'Desgaste'], defectoChips: ['Amortiguador vencido', 'Rótula suelta']),
-  InspectionItem(id: 'mec_09', name: 'Suspensión trasera', obsChips: ['Ruido', 'Desgaste'], defectoChips: ['Amortiguador vencido', 'Resorte roto']),
-  InspectionItem(id: 'mec_10', name: 'Dirección', obsChips: ['Juego leve', 'Vibración'], defectoChips: ['Juego excesivo', 'Fuga hidráulica']),
-  InspectionItem(id: 'mec_11', name: 'Transmisión / caja', obsChips: ['Cambio duro', 'Ruido'], defectoChips: ['No entra cambio', 'Fuga']),
-  InspectionItem(id: 'mec_12', name: 'Embrague', obsChips: ['Punto alto', 'Patina leve'], defectoChips: ['Patina', 'No desembraga']),
-  InspectionItem(id: 'mec_13', name: 'Sistema de escape', obsChips: ['Ruido leve', 'Oxidación'], defectoChips: ['Fuga de gases', 'Tubo roto']),
-  InspectionItem(id: 'mec_14', name: 'Radiador', obsChips: ['Sucio', 'Fuga mínima'], defectoChips: ['Fuga importante', 'Obstruido']),
-  InspectionItem(id: 'mec_15', name: 'Mangueras y correas', obsChips: ['Desgaste', 'Grietas menores'], defectoChips: ['Agrietada', 'Rota', 'Fuga']),
-  InspectionItem(id: 'mec_16', name: 'Filtro de aire', obsChips: ['Sucio'], defectoChips: ['Obstruido', 'Roto']),
-  InspectionItem(id: 'mec_17', name: 'Bujías', obsChips: ['Desgaste normal'], defectoChips: ['Dañadas', 'Incorrectas']),
-  InspectionItem(id: 'mec_18', name: 'Sistema eléctrico', obsChips: ['Cables sueltos'], defectoChips: ['Cortocircuito', 'Fusibles quemados']),
+  // Motor (9)
+  InspectionItem(id: 'mec_01', name: 'Sonidos del motor', subcategory: 'Motor'),
+  InspectionItem(id: 'mec_02', name: 'Fugas de aceite', subcategory: 'Motor'),
+  InspectionItem(id: 'mec_03', name: 'Fugas de refrigerante', subcategory: 'Motor'),
+  InspectionItem(id: 'mec_04', name: 'Prueba de gas', subcategory: 'Motor'),
+  InspectionItem(id: 'mec_05', name: 'Nivel de aceite motor', subcategory: 'Motor'),
+  InspectionItem(id: 'mec_06', name: 'Nivel de aceite de caja', subcategory: 'Motor'),
+  InspectionItem(id: 'mec_07', name: 'Nivel de refrigerante', subcategory: 'Motor'),
+  InspectionItem(id: 'mec_08', name: 'Motor sin señales de manipulación', subcategory: 'Motor'),
+  InspectionItem(id: 'mec_09', name: 'Estado de batería', subcategory: 'Motor'),
+  // Parte inferior del vehículo (4)
+  InspectionItem(id: 'mec_10', name: 'Fugas inferiores de motor o transmisión', subcategory: 'Parte inferior del vehículo'),
+  InspectionItem(id: 'mec_11', name: 'Golpes en suspensión o estructura inferior', subcategory: 'Parte inferior del vehículo'),
+  InspectionItem(id: 'mec_12', name: 'Estado del tubo de escape', subcategory: 'Parte inferior del vehículo'),
+  InspectionItem(id: 'mec_13', name: 'Señales de óxido estructural', subcategory: 'Parte inferior del vehículo'),
+  // Suspensión y dirección (2)
+  InspectionItem(id: 'mec_14', name: 'Estado de suspensión', subcategory: 'Suspensión y dirección'),
+  InspectionItem(id: 'mec_15', name: 'Dirección', subcategory: 'Suspensión y dirección'),
+  // Sistema de frenos (1)
+  InspectionItem(id: 'mec_16', name: 'Funcionamiento de frenos', subcategory: 'Sistema de frenos'),
+  // Prueba de ruta (3)
+  InspectionItem(id: 'mec_17', name: 'Vibración o ruido al frenar', subcategory: 'Prueba de ruta'),
+  InspectionItem(id: 'mec_18', name: 'Funcionamiento de transmisión', subcategory: 'Prueba de ruta'),
+  InspectionItem(id: 'mec_19', name: 'Comportamiento general en conducción', subcategory: 'Prueba de ruta'),
 ];
+
+// --- Carrocería: 12 ítems ---
 
 const _carroceriaItems = [
-  InspectionItem(id: 'car_01', name: 'Pintura general', obsChips: ['Rayones leves', 'Descolorida'], defectoChips: ['Repintada', 'Diferencia de tono', 'Ampolla']),
-  InspectionItem(id: 'car_02', name: 'Abolladuras', obsChips: ['Menor', 'Superficial'], defectoChips: ['Múltiples', 'Severa', 'Estructural']),
-  InspectionItem(id: 'car_03', name: 'Oxidación / corrosión', obsChips: ['Puntos aislados'], defectoChips: ['Extendida', 'Perforación']),
-  InspectionItem(id: 'car_04', name: 'Parabrisas delantero', obsChips: ['Rajadura menor', 'Chip'], defectoChips: ['Rajadura extendida', 'Roto']),
-  InspectionItem(id: 'car_05', name: 'Luneta trasera', obsChips: ['Rajadura menor'], defectoChips: ['Rota', 'Desempañador dañado']),
-  InspectionItem(id: 'car_06', name: 'Ventanas laterales', obsChips: ['Rayada'], defectoChips: ['Rota', 'No sube/baja']),
-  InspectionItem(id: 'car_07', name: 'Faros delanteros', obsChips: ['Opacidad leve', 'Humedad'], defectoChips: ['No funciona', 'Roto', 'No original']),
-  InspectionItem(id: 'car_08', name: 'Faros traseros', obsChips: ['Humedad', 'Opaco'], defectoChips: ['No funciona', 'Roto']),
-  InspectionItem(id: 'car_09', name: 'Espejos laterales', obsChips: ['Rayado'], defectoChips: ['Roto', 'Faltante', 'No ajusta']),
-  InspectionItem(id: 'car_10', name: 'Parachoques delantero', obsChips: ['Rayado', 'Desalineado'], defectoChips: ['Roto', 'Faltante', 'Reparado']),
-  InspectionItem(id: 'car_11', name: 'Parachoques trasero', obsChips: ['Rayado', 'Desalineado'], defectoChips: ['Roto', 'Faltante']),
-  InspectionItem(id: 'car_12', name: 'Llantas y aros', obsChips: ['Desgaste parcial', 'Aro rayado'], defectoChips: ['Lisa', 'Dañada', 'Diferente medida']),
+  // Estructura y alineación (3)
+  InspectionItem(id: 'car_01', name: 'Alineación de puertas, capot y carrocería', subcategory: 'Estructura y alineación'),
+  InspectionItem(id: 'car_02', name: 'Señales de accidentes o reparaciones', subcategory: 'Estructura y alineación'),
+  InspectionItem(id: 'car_03', name: 'Soldaduras o intervenciones estructurales visibles', subcategory: 'Estructura y alineación'),
+  // Pintura y superficie (2)
+  InspectionItem(id: 'car_04', name: 'Estado general de pintura', subcategory: 'Pintura y superficie'),
+  InspectionItem(id: 'car_05', name: 'Rayones o golpes visibles', subcategory: 'Pintura y superficie'),
+  // Lunas y parabrisas (2)
+  InspectionItem(id: 'car_06', name: 'Estado del parabrisas', subcategory: 'Lunas y parabrisas'),
+  InspectionItem(id: 'car_07', name: 'Estado de lunas laterales y trasera', subcategory: 'Lunas y parabrisas'),
+  // Luces exteriores (3)
+  InspectionItem(id: 'car_08', name: 'Faros delanteros', subcategory: 'Luces exteriores'),
+  InspectionItem(id: 'car_09', name: 'Faros traseros', subcategory: 'Luces exteriores'),
+  InspectionItem(id: 'car_10', name: 'Focos halógenos reglamentarios', subcategory: 'Luces exteriores'),
+  // Neumáticos y aros (2)
+  InspectionItem(id: 'car_11', name: 'Estado de neumáticos', subcategory: 'Neumáticos y aros'),
+  InspectionItem(id: 'car_12', name: 'Estado de aros', subcategory: 'Neumáticos y aros'),
 ];
 
+// --- Interior: 13 ítems ---
+
 const _interiorItems = [
-  InspectionItem(id: 'int_01', name: 'Tablero / dashboard', obsChips: ['Rayado', 'Testigo encendido'], defectoChips: ['Luces no funcionan', 'Fisura']),
-  InspectionItem(id: 'int_02', name: 'Asiento conductor', obsChips: ['Desgaste', 'Mancha'], defectoChips: ['Roto', 'No ajusta', 'Estructura dañada']),
-  InspectionItem(id: 'int_03', name: 'Asiento copiloto', obsChips: ['Desgaste', 'Mancha'], defectoChips: ['Roto', 'No ajusta']),
-  InspectionItem(id: 'int_04', name: 'Asientos traseros', obsChips: ['Desgaste', 'Mancha'], defectoChips: ['Roto', 'No reclinan']),
-  InspectionItem(id: 'int_05', name: 'Cinturones de seguridad', obsChips: ['Retracción lenta'], defectoChips: ['No funciona', 'Cortado', 'Trabado']),
-  InspectionItem(id: 'int_06', name: 'Volante', obsChips: ['Desgaste', 'Juego leve'], defectoChips: ['Juego excesivo', 'Dañado']),
-  InspectionItem(id: 'int_07', name: 'Aire acondicionado', obsChips: ['Enfría poco', 'Ruido'], defectoChips: ['No funciona', 'Fuga de gas']),
-  InspectionItem(id: 'int_08', name: 'Sistema de audio', obsChips: ['Parlante dañado'], defectoChips: ['No funciona', 'No original']),
-  InspectionItem(id: 'int_09', name: 'Ventanas eléctricas', obsChips: ['Lenta'], defectoChips: ['No funciona', 'Trabada']),
-  InspectionItem(id: 'int_10', name: 'Seguros eléctricos', obsChips: ['Intermitente'], defectoChips: ['No funciona']),
-  InspectionItem(id: 'int_11', name: 'Tapicería', obsChips: ['Desgaste', 'Mancha'], defectoChips: ['Rota', 'Quemadura']),
-  InspectionItem(id: 'int_12', name: 'Alfombras', obsChips: ['Desgaste', 'Manchada'], defectoChips: ['Rota', 'Faltante', 'Humedad']),
-  InspectionItem(id: 'int_13', name: 'Maletero', obsChips: ['Sucio', 'Humedad'], defectoChips: ['Bisagra dañada', 'No cierra', 'Oxidado']),
+  // Sistemas funcionales (7)
+  InspectionItem(id: 'int_01', name: 'Resultado de revisión de scanner', subcategory: 'Sistemas funcionales'),
+  InspectionItem(id: 'int_02', name: 'Funcionamiento de panel central / multimedia', subcategory: 'Sistemas funcionales'),
+  InspectionItem(id: 'int_03', name: 'Funcionamiento de comando de luces', subcategory: 'Sistemas funcionales'),
+  InspectionItem(id: 'int_04', name: 'Funcionamiento de aire acondicionado', subcategory: 'Sistemas funcionales'),
+  InspectionItem(id: 'int_05', name: 'Funcionamiento de elevalunas', subcategory: 'Sistemas funcionales'),
+  InspectionItem(id: 'int_06', name: 'Funcionamiento de limpia parabrisas', subcategory: 'Sistemas funcionales'),
+  InspectionItem(id: 'int_07', name: 'Funcionalidad de asientos', subcategory: 'Sistemas funcionales'),
+  // Seguridad interior (2)
+  InspectionItem(id: 'int_08', name: 'Cinturones de seguridad', subcategory: 'Seguridad interior'),
+  InspectionItem(id: 'int_09', name: 'Testigos de tablero', subcategory: 'Seguridad interior'),
+  // Estética interior (4)
+  InspectionItem(id: 'int_10', name: 'Estado de molduras', subcategory: 'Estética interior'),
+  InspectionItem(id: 'int_11', name: 'Desgaste de asientos', subcategory: 'Estética interior'),
+  InspectionItem(id: 'int_12', name: 'Estado de alfombra', subcategory: 'Estética interior'),
+  InspectionItem(id: 'int_13', name: 'Estado de techo', subcategory: 'Estética interior'),
 ];

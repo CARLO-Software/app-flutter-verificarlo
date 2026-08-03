@@ -3,108 +3,63 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:app_flutter_verificarlo/core/constants/app_colors.dart';
 import 'package:app_flutter_verificarlo/data/models/checklist_models.dart';
 import 'package:app_flutter_verificarlo/presentation/providers/checklist_controller.dart';
-import 'package:app_flutter_verificarlo/presentation/providers/photo_controller.dart';
 import 'package:app_flutter_verificarlo/presentation/widgets/status_buttons.dart';
-import 'package:app_flutter_verificarlo/presentation/widgets/comment_chips.dart';
-import 'package:app_flutter_verificarlo/presentation/widgets/photo_capture.dart';
-import 'package:app_flutter_verificarlo/presentation/widgets/voice_button.dart';
 
 class ChecklistTab extends ConsumerStatefulWidget {
-  final int reportId;
-  const ChecklistTab({super.key, required this.reportId});
+  final int bookingId;
+  const ChecklistTab({super.key, required this.bookingId});
 
   @override
   ConsumerState<ChecklistTab> createState() => _ChecklistTabState();
 }
 
-class _ChecklistTabState extends ConsumerState<ChecklistTab> {
+class _ChecklistTabState extends ConsumerState<ChecklistTab>
+    with SingleTickerProviderStateMixin {
   final _categories = InspectionCategory.buildAll();
-  int _selectedCategory = 0;
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: _categories.length, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final checkState = ref.watch(checklistProvider(widget.reportId));
-    final category = _categories[_selectedCategory];
-    final completed = checkState.countCompleted(category.items);
+    final checkState = ref.watch(checklistProvider(widget.bookingId));
 
     return Column(
       children: [
-        // Category selector - horizontal scroll
-        SizedBox(
-          height: 48,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: _categories.length,
-            itemBuilder: (_, i) {
-              final cat = _categories[i];
-              final isSelected = i == _selectedCategory;
-              final catCompleted = checkState.countCompleted(cat.items);
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                child: ChoiceChip(
-                  label: Text('${cat.name} ($catCompleted/${cat.items.length})'),
-                  selected: isSelected,
-                  onSelected: (_) => setState(() => _selectedCategory = i),
-                  selectedColor: AppColors.primary,
-                  labelStyle: TextStyle(
-                    color: isSelected ? AppColors.secondary : AppColors.textPrimary,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    fontSize: 13,
-                  ),
-                ),
-              );
-            },
-          ),
+        // Category tabs
+        TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          indicatorColor: AppColors.primary,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSecondary,
+          tabAlignment: TabAlignment.start,
+          tabs: _categories.map((cat) {
+            final done = checkState.countCompleted(cat.items);
+            return Tab(text: '${cat.name} ($done/${cat.items.length})');
+          }).toList(),
         ),
 
-        // Progress bar
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Row(
-            children: [
-              Expanded(
-                child: LinearProgressIndicator(
-                  value: category.items.isEmpty ? 0 : completed / category.items.length,
-                  backgroundColor: Colors.grey.shade200,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.primary),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '$completed/${category.items.length} (${category.items.isEmpty ? 0 : (completed * 100 ~/ category.items.length)}%)',
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-        ),
-
-        // "Todo OK" button
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () => ref
-                  .read(checklistProvider(widget.reportId).notifier)
-                  .setAllOk(category.items),
-              icon: const Icon(Icons.check_circle, size: 16),
-              label: const Text('Todo OK', style: TextStyle(fontSize: 13)),
-            ),
-          ),
-        ),
-
-        // Items list
+        // Tab content
         Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-            itemCount: category.items.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (_, i) => _ItemCard(
-              item: category.items[i],
-              category: category,
-              reportId: widget.reportId,
-            ),
+          child: TabBarView(
+            controller: _tabController,
+            children: _categories.map((cat) {
+              return _CategoryContent(
+                category: cat,
+                bookingId: widget.bookingId,
+              );
+            }).toList(),
           ),
         ),
       ],
@@ -112,29 +67,168 @@ class _ChecklistTabState extends ConsumerState<ChecklistTab> {
   }
 }
 
-class _ItemCard extends ConsumerStatefulWidget {
-  final InspectionItem item;
+/// Renders one category's items grouped by subcategory.
+class _CategoryContent extends ConsumerWidget {
   final InspectionCategory category;
-  final int reportId;
+  final int bookingId;
 
-  const _ItemCard({
-    required this.item,
-    required this.category,
-    required this.reportId,
+  const _CategoryContent({required this.category, required this.bookingId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final checkState = ref.watch(checklistProvider(bookingId));
+    final notifier = ref.read(checklistProvider(bookingId).notifier);
+    final grouped = category.itemsBySubcategory;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+      children: [
+        // Progress bar
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: LinearProgressIndicator(
+                  value: category.items.isEmpty
+                      ? 0
+                      : checkState.countCompleted(category.items) /
+                          category.items.length,
+                  backgroundColor: Colors.grey.shade200,
+                  valueColor:
+                      const AlwaysStoppedAnimation(AppColors.primary),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${checkState.countCompleted(category.items)}/${category.items.length}',
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+
+        // "Todo OK" shortcut
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () => notifier.setAllOk(category.items),
+            icon: const Icon(Icons.check_circle, size: 16),
+            label: const Text('Todo OK', style: TextStyle(fontSize: 13)),
+          ),
+        ),
+
+        // Subcategory sections
+        for (final entry in grouped.entries) ...[
+          _SubcategoryHeader(
+            title: entry.key,
+            completed: checkState.countCompleted(entry.value),
+            total: entry.value.length,
+          ),
+          for (final item in entry.value)
+            _ItemTile(
+              item: item,
+              result: checkState.results[item.id],
+              allowed: category.allowedStatuses,
+              onStatusChanged: (s) => notifier.setStatus(item.id, s),
+              onCommentChanged: (c) => notifier.setComment(item.id, c),
+            ),
+          const SizedBox(height: 12),
+        ],
+      ],
+    );
+  }
+}
+
+class _SubcategoryHeader extends StatelessWidget {
+  final String title;
+  final int completed;
+  final int total;
+
+  const _SubcategoryHeader({
+    required this.title,
+    required this.completed,
+    required this.total,
   });
 
   @override
-  ConsumerState<_ItemCard> createState() => _ItemCardState();
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                color: AppColors.secondary,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: completed == total && total > 0
+                  ? AppColors.success.withValues(alpha: 0.1)
+                  : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '$completed de $total',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: completed == total && total > 0
+                    ? AppColors.success
+                    : AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _ItemCardState extends ConsumerState<_ItemCard> {
-  bool _expanded = false;
+class _ItemTile extends StatefulWidget {
+  final InspectionItem item;
+  final ItemResult? result;
+  final List<ItemStatus> allowed;
+  final ValueChanged<ItemStatus?> onStatusChanged;
+  final ValueChanged<String> onCommentChanged;
+
+  const _ItemTile({
+    required this.item,
+    required this.result,
+    required this.allowed,
+    required this.onStatusChanged,
+    required this.onCommentChanged,
+  });
+
+  @override
+  State<_ItemTile> createState() => _ItemTileState();
+}
+
+class _ItemTileState extends State<_ItemTile> {
   late final TextEditingController _commentController;
 
   @override
   void initState() {
     super.initState();
-    _commentController = TextEditingController();
+    _commentController =
+        TextEditingController(text: widget.result?.comment ?? '');
+  }
+
+  @override
+  void didUpdateWidget(covariant _ItemTile old) {
+    super.didUpdateWidget(old);
+    final newComment = widget.result?.comment ?? '';
+    if (_commentController.text != newComment) {
+      _commentController.text = newComment;
+    }
   }
 
   @override
@@ -145,110 +239,38 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
 
   @override
   Widget build(BuildContext context) {
-    final result = ref.watch(checklistProvider(widget.reportId)).results[widget.item.id];
-    final notifier = ref.read(checklistProvider(widget.reportId).notifier);
-    final status = result?.status;
-
-    // Sync comment controller
-    if (_commentController.text != (result?.comment ?? '')) {
-      _commentController.text = result?.comment ?? '';
-    }
-
-    // Determine which chips to show based on status
-    final chips = status == ItemStatus.defecto
-        ? widget.item.defectoChips
-        : status == ItemStatus.observacion
-            ? widget.item.obsChips
-            : <String>[];
+    final status = widget.result?.status;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header + status buttons
-          InkWell(
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.item.name,
-                    style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-                  ),
-                ),
-                Icon(
-                  _expanded ? Icons.expand_less : Icons.expand_more,
-                  size: 20,
-                  color: AppColors.textSecondary,
-                ),
-              ],
-            ),
+          Text(
+            widget.item.name,
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
           ),
           const SizedBox(height: 6),
-
           StatusButtons(
             selected: status,
-            allowed: widget.category.allowedStatuses,
-            onChanged: (s) => notifier.setStatus(widget.item.id, s),
+            allowed: widget.allowed,
+            onChanged: widget.onStatusChanged,
           ),
-
-          // Expanded detail
-          if (_expanded || status == ItemStatus.observacion || status == ItemStatus.defecto) ...[
-            const SizedBox(height: 8),
-
-            if (chips.isNotEmpty)
-              CommentChips(
-                chips: chips,
-                selected: result?.selectedChips ?? [],
-                onToggle: (chip) => notifier.toggleChip(widget.item.id, chip),
-              ),
-
-            const SizedBox(height: 6),
-
-            // Comment + voice
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _commentController,
-                    onChanged: (v) => notifier.setComment(widget.item.id, v),
-                    decoration: const InputDecoration(
-                      hintText: 'Comentario...',
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    ),
-                    style: const TextStyle(fontSize: 13),
-                    maxLines: 2,
-                  ),
-                ),
-                VoiceButton(
-                  onResult: (text) {
-                    final current = _commentController.text;
-                    final newText = current.isEmpty ? text : '$current $text';
-                    _commentController.text = newText;
-                    notifier.setComment(widget.item.id, newText);
-                  },
-                ),
-              ],
+          // Comment field — always visible for optional comment
+          const SizedBox(height: 6),
+          TextField(
+            controller: _commentController,
+            onChanged: widget.onCommentChanged,
+            decoration: const InputDecoration(
+              hintText: 'Comentario (opcional)...',
+              isDense: true,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             ),
-
-            const SizedBox(height: 6),
-
-            // Photos
-            PhotoCapture(
-              photoUrls: result?.photoUrls ?? [],
-              onCamera: () async {
-                final path = await ref.read(photoControllerProvider).capturePhoto();
-                if (path != null) notifier.addPhoto(widget.item.id, path);
-              },
-              onGallery: () async {
-                final path = await ref.read(photoControllerProvider).pickFromGallery();
-                if (path != null) notifier.addPhoto(widget.item.id, path);
-              },
-              onDelete: (url) => notifier.removePhoto(widget.item.id, url),
-            ),
-          ],
+            style: const TextStyle(fontSize: 13),
+            maxLines: 1,
+          ),
+          const Divider(height: 16),
         ],
       ),
     );

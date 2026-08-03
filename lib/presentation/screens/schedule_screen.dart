@@ -60,9 +60,7 @@ class ScheduleScreen extends ConsumerWidget {
                                 subtitle: Text(b.clientName),
                                 trailing: const Icon(Icons.chevron_right),
                                 onTap: () {
-                                  if (b.reportId != null) {
-                                    context.push('/inspection/${b.reportId}');
-                                  }
+                                  context.push('/inspection/${b.id}', extra: b);
                                 },
                               ),
                             );

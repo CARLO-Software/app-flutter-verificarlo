@@ -14,16 +14,16 @@ class InspectionCard extends StatelessWidget {
     this.isCompleted = false,
   });
 
+  void _openInspection(BuildContext context) {
+    context.push('/inspection/${booking.id}', extra: booking);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          if (booking.reportId != null) {
-            context.push('/inspection/${booking.reportId}');
-          }
-        },
+        onTap: () => _openInspection(context),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -179,16 +179,8 @@ class InspectionCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     FilledButton.tonal(
-                      onPressed: () {
-                        if (booking.reportId != null) {
-                          context.push('/inspection/${booking.reportId}');
-                        }
-                      },
-                      child: Text(
-                        booking.mechanicalStatus == 'EN_PROCESO'
-                            ? 'Continuar'
-                            : 'Iniciar',
-                      ),
+                      onPressed: () => _openInspection(context),
+                      child: const Text('Iniciar'),
                     ),
                   ],
                 ),
@@ -201,11 +193,7 @@ class InspectionCard extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerRight,
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      if (booking.reportId != null) {
-                        context.push('/inspection/${booking.reportId}');
-                      }
-                    },
+                    onPressed: () => _openInspection(context),
                     icon: const Icon(Icons.visibility, size: 18),
                     label: const Text('Ver reporte'),
                   ),
@@ -229,10 +217,14 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ponytail: cremita para pendientes, verde para completados
+    const cream = Color(0xFFFFF3CD);
+    const creamText = Color(0xFF856404);
+
     final (color, bgColor) = switch (status) {
-      'Completado' => (AppColors.completed, AppColors.completed.withValues(alpha: 0.1)),
+      'Completado' => (AppColors.completed, AppColors.completed.withValues(alpha: 0.15)),
       'En progreso' => (AppColors.inProgress, AppColors.inProgress.withValues(alpha: 0.1)),
-      _ => (AppColors.pending, AppColors.pending.withValues(alpha: 0.1)),
+      _ => (creamText, cream),
     };
 
     return Container(
