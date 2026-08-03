@@ -30,7 +30,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   void _onNewInspection(Map<String, dynamic> data) {
     ref.invalidate(pendingInspectionsProvider);
+    ref.invalidate(completedInspectionsProvider);
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(data['title'] ?? 'Nueva inspección asignada'),

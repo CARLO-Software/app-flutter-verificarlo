@@ -71,8 +71,10 @@ class FcmService {
 
   void _processMessage(RemoteMessage message) {
     final data = message.data;
+    final type = data['type'] ?? '';
 
-    if (data['type'] == 'new_inspection' && onInspectionReceived != null) {
+    // ponytail: accept any inspection-related push, not just new_inspection
+    if (type.contains('inspection') && onInspectionReceived != null) {
       onInspectionReceived!(data);
     }
   }
