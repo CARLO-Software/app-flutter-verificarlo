@@ -1,7 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:app_flutter_verificarlo/core/constants/api_endpoints.dart';
 import 'package:app_flutter_verificarlo/core/constants/app_colors.dart';
 import 'package:app_flutter_verificarlo/core/network/api_client.dart';
@@ -282,11 +286,15 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Inspección finalizada'),
+          content: Text('Inspección finalizada. Descargando PDF...'),
           backgroundColor: AppColors.success,
         ),
       );
 
+      // Download and open PDF
+      await _downloadAndOpenPdf();
+
+      if (!mounted) return;
       context.pop(); // Back to dashboard
     } catch (e) {
       if (!mounted) return;
@@ -295,6 +303,38 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _downloadAndOpenPdf() async {
+    try {
+      final url = '${ApiEndpoints.nextBaseUrl}${ApiEndpoints.reportPdf(widget.bookingId)}';
+      debugPrint('PDF download: $url');
+
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/informe-${widget.bookingId}.pdf');
+
+      final response = await Dio().get<List<int>>(
+        url,
+        options: Options(
+          headers: {'x-api-key': ApiEndpoints.nextApiKey},
+          responseType: ResponseType.bytes,
+        ),
+      );
+
+      await file.writeAsBytes(response.data!);
+
+      final uri = Uri.file(file.path);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('PDF download error: $e');
+      // ponytail: PDF download is best-effort, inspection already saved
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Inspección guardada. Error descargando PDF: $e')),
+      );
     }
   }
 

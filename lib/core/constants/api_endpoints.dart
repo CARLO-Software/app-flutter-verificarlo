@@ -1,6 +1,11 @@
 class ApiEndpoints {
   static const String baseUrl = 'https://www.verificarlo.com';
 
+  // Next.js service (PDF generation)
+  static const String nextBaseUrl = 'https://www.verificarlo.com'; // ponytail: same domain for now, split if Next.js moves
+  static const String nextApiKey = '6d425be6d6365effde745937e8d04d3c4ada7513eb024946f0f294123098070f';
+  static String reportPdf(int bookingId) => '/api/inspections/$bookingId/report/pdf';
+
   // Auth
   static const String login = '/api/login';
 

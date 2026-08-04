@@ -9,7 +9,8 @@
       "Bash(flutter devices:*)",
       "Bash(flutter run:*)",
       "Bash(adb kill-server:*)",
-      "Bash(adb start-server:*)"
+      "Bash(adb start-server:*)",
+      "WebFetch(domain:www.verificarlo.com)"
     ]
   }
 }
