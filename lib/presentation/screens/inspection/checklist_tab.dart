@@ -4,6 +4,7 @@ import 'package:app_flutter_verificarlo/core/constants/app_colors.dart';
 import 'package:app_flutter_verificarlo/data/models/checklist_models.dart';
 import 'package:app_flutter_verificarlo/presentation/providers/checklist_controller.dart';
 import 'package:app_flutter_verificarlo/presentation/widgets/status_buttons.dart';
+import 'package:app_flutter_verificarlo/presentation/widgets/voice_button.dart';
 
 class ChecklistTab extends ConsumerStatefulWidget {
   final int bookingId;
@@ -133,6 +134,7 @@ class _CategoryContent extends ConsumerWidget {
               allowed: category.allowedStatuses,
               onStatusChanged: (s) => notifier.setStatus(item.id, s),
               onCommentChanged: (c) => notifier.setComment(item.id, c),
+              onChipToggled: (c) => notifier.toggleChip(item.id, c),
             ),
           const SizedBox(height: 12),
         ],
@@ -199,6 +201,7 @@ class _ItemTile extends StatefulWidget {
   final List<ItemStatus> allowed;
   final ValueChanged<ItemStatus?> onStatusChanged;
   final ValueChanged<String> onCommentChanged;
+  final ValueChanged<String> onChipToggled;
 
   const _ItemTile({
     required this.item,
@@ -206,6 +209,7 @@ class _ItemTile extends StatefulWidget {
     required this.allowed,
     required this.onStatusChanged,
     required this.onCommentChanged,
+    required this.onChipToggled,
   });
 
   @override
@@ -214,6 +218,7 @@ class _ItemTile extends StatefulWidget {
 
 class _ItemTileState extends State<_ItemTile> {
   late final TextEditingController _commentController;
+  String _baseComment = '';
 
   @override
   void initState() {
@@ -240,6 +245,10 @@ class _ItemTileState extends State<_ItemTile> {
   @override
   Widget build(BuildContext context) {
     final status = widget.result?.status;
+    final showChips = status == ItemStatus.observacion ||
+        status == ItemStatus.defecto;
+    final chips = widget.item.quickChips;
+    final selectedChips = widget.result?.selectedChips ?? [];
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -256,16 +265,73 @@ class _ItemTileState extends State<_ItemTile> {
             allowed: widget.allowed,
             onChanged: widget.onStatusChanged,
           ),
-          // Comment field — always visible for optional comment
+          // Quick-response chips — shown on observación/defecto
+          if (showChips && chips.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: chips.map((chip) {
+                final isSelected = selectedChips.contains(chip);
+                return GestureDetector(
+                  onTap: () => widget.onChipToggled(chip),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primary.withValues(alpha: 0.15)
+                          : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primary
+                            : Colors.grey.shade300,
+                      ),
+                    ),
+                    child: Text(
+                      chip,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
           const SizedBox(height: 6),
           TextField(
             controller: _commentController,
             onChanged: widget.onCommentChanged,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'Comentario (opcional)...',
               isDense: true,
               contentPadding:
-                  EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              suffixIcon: VoiceButton(
+                onListeningChanged: (listening) {
+                  if (listening) {
+                    final t = _commentController.text;
+                    _baseComment = t.isEmpty ? '' : '$t ';
+                  }
+                },
+                onPartialResult: (partial) {
+                  _commentController.text = '$_baseComment$partial';
+                },
+                onResult: (text) {
+                  final newText = '$_baseComment$text';
+                  _commentController.text = newText;
+                  widget.onCommentChanged(newText);
+                },
+              ),
+              suffixIconConstraints:
+                  const BoxConstraints(minWidth: 36, minHeight: 36),
             ),
             style: const TextStyle(fontSize: 13),
             maxLines: 1,

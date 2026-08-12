@@ -5,8 +5,15 @@ import 'package:app_flutter_verificarlo/core/constants/app_colors.dart';
 
 class VoiceButton extends StatefulWidget {
   final ValueChanged<String> onResult;
+  final ValueChanged<String>? onPartialResult;
+  final ValueChanged<bool>? onListeningChanged;
 
-  const VoiceButton({super.key, required this.onResult});
+  const VoiceButton({
+    super.key,
+    required this.onResult,
+    this.onPartialResult,
+    this.onListeningChanged,
+  });
 
   @override
   State<VoiceButton> createState() => _VoiceButtonState();
@@ -20,6 +27,7 @@ class _VoiceButtonState extends State<VoiceButton> {
     if (_isListening) {
       await _speech.stop();
       setState(() => _isListening = false);
+      widget.onListeningChanged?.call(false);
       return;
     }
 
@@ -27,12 +35,16 @@ class _VoiceButtonState extends State<VoiceButton> {
     if (!available) return;
 
     setState(() => _isListening = true);
+    widget.onListeningChanged?.call(true);
     await _speech.listen(
       listenOptions: SpeechListenOptions(localeId: 'es_PE'),
       onResult: (result) {
         if (result.finalResult) {
           widget.onResult(result.recognizedWords);
           setState(() => _isListening = false);
+          widget.onListeningChanged?.call(false);
+        } else {
+          widget.onPartialResult?.call(result.recognizedWords);
         }
       },
     );

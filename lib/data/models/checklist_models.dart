@@ -69,7 +69,31 @@ class InspectionItem {
     this.obsChips = const [],
     this.defectoChips = const [],
   });
+
+  // ponytail: subcategory-level chips, per-item obsChips/defectoChips override when populated
+  List<String> get quickChips => obsChips.isNotEmpty
+      ? obsChips
+      : _quickChipsBySubcategory[subcategory] ?? [];
 }
+
+const _quickChipsBySubcategory = <String, List<String>>{
+  'Documentación': ['Vencido', 'No disponible', 'Copia', 'Ilegible'],
+  'Identificación': ['No coincide', 'Ilegible', 'Alterado'],
+  'Accesorios y elementos obligatorios': ['Faltante', 'Incompleto', 'Desgastado'],
+  'Motor': ['Fuga leve', 'Nivel bajo', 'Ruido anormal', 'Requiere cambio'],
+  'Parte inferior del vehículo': ['Fuga', 'Corrosión', 'Golpe', 'Óxido'],
+  'Suspensión y dirección': ['Holgura', 'Ruido al girar', 'Vibración', 'Desgastado'],
+  'Sistema de frenos': ['Desgaste parcial', 'Ruido al frenar', 'Pastillas bajas'],
+  'Prueba de ruta': ['Vibración', 'Ruido', 'Tira a un lado', 'Respuesta lenta'],
+  'Estructura y alineación': ['Desalineado', 'Repintado', 'Masillado', 'Golpe previo'],
+  'Pintura y superficie': ['Rayón', 'Descolorido', 'Burbuja', 'Repintado'],
+  'Lunas y parabrisas': ['Rajadura', 'Chip', 'Empañado', 'Manchado'],
+  'Luces exteriores': ['Empañado', 'Opaco', 'No funciona', 'Intermitente'],
+  'Neumáticos y aros': ['Desgaste irregular', 'Presión baja', 'Agrietado'],
+  'Sistemas funcionales': ['Intermitente', 'Lento', 'Ruidoso', 'No funciona'],
+  'Seguridad interior': ['Trabado', 'Flojo', 'Testigo encendido'],
+  'Estética interior': ['Manchado', 'Rasgado', 'Desgastado', 'Roto'],
+};
 
 class ItemResult {
   final String itemId;
