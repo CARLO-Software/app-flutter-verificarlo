@@ -55,13 +55,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final user = await _repo.login(email, password);
       state = AuthState(status: AuthStatus.authenticated, user: user);
-      await FcmService.instance.registerToken();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: e.toString().replaceAll('Exception: ', ''),
       );
+      return;
     }
+    // ponytail: fire-and-forget, FCM failure should never block login
+    try {
+      await FcmService.instance.registerToken();
+    } catch (_) {}
   }
 
   Future<void> logout() async {
