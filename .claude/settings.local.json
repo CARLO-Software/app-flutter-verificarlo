@@ -13,7 +13,15 @@
       "WebFetch(domain:www.verificarlo.com)",
       "Bash(git add *)",
       "Bash(git commit -m '@ *)",
-      "Bash(git commit --amend -m ' *)"
+      "Bash(git commit --amend -m ' *)",
+      "WebFetch(domain:saascrmreview.com)",
+      "WebFetch(domain:netpartners.marketing)",
+      "WebFetch(domain:www.ghlexperts.com)",
+      "Artifact",
+      "WebSearch",
+      "WebFetch(domain:elefanterevops.com)",
+      "WebFetch(domain:www.hubspot.com)",
+      "WebFetch(domain:smartprocessflow.com)"
     ]
   }
 }
