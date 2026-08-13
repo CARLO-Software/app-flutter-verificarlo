@@ -247,7 +247,7 @@ class _ItemTileState extends State<_ItemTile> {
     final status = widget.result?.status;
     final showChips = status == ItemStatus.observacion ||
         status == ItemStatus.defecto;
-    final chips = widget.item.quickChips;
+    final chips = status != null ? widget.item.quickChipsFor(status) : widget.item.quickChips;
     final selectedChips = widget.result?.selectedChips ?? [];
 
     return Padding(

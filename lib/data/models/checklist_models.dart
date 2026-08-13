@@ -71,28 +71,56 @@ class InspectionItem {
   });
 
   // ponytail: subcategory-level chips, per-item obsChips/defectoChips override when populated
-  List<String> get quickChips => obsChips.isNotEmpty
-      ? obsChips
-      : _quickChipsBySubcategory[subcategory] ?? [];
+  List<String> quickChipsFor(ItemStatus status) {
+    if (status == ItemStatus.defecto) {
+      return defectoChips.isNotEmpty
+          ? defectoChips
+          : _defectoChipsBySubcategory[subcategory] ?? [];
+    }
+    return obsChips.isNotEmpty
+        ? obsChips
+        : _obsChipsBySubcategory[subcategory] ?? [];
+  }
+
+  List<String> get quickChips => quickChipsFor(ItemStatus.observacion);
 }
 
-const _quickChipsBySubcategory = <String, List<String>>{
-  'Documentación': ['Vencido', 'No disponible', 'Copia', 'Ilegible'],
-  'Identificación': ['No coincide', 'Ilegible', 'Alterado'],
-  'Accesorios y elementos obligatorios': ['Faltante', 'Incompleto', 'Desgastado'],
+const _obsChipsBySubcategory = <String, List<String>>{
+  'Documentación': ['Próximo a vencer', 'No porta', 'Deteriorado'],
+  'Identificación': ['Difícil lectura', 'Desgastado'],
+  'Accesorios y elementos obligatorios': ['Incompleto', 'Desgastado', 'Requiere cambio'],
   'Motor': ['Fuga leve', 'Nivel bajo', 'Ruido anormal', 'Requiere cambio'],
-  'Parte inferior del vehículo': ['Fuga', 'Corrosión', 'Golpe', 'Óxido'],
-  'Suspensión y dirección': ['Holgura', 'Ruido al girar', 'Vibración', 'Desgastado'],
-  'Sistema de frenos': ['Desgaste parcial', 'Ruido al frenar', 'Pastillas bajas'],
-  'Prueba de ruta': ['Vibración', 'Ruido', 'Tira a un lado', 'Respuesta lenta'],
-  'Estructura y alineación': ['Desalineado', 'Repintado', 'Masillado', 'Golpe previo'],
-  'Pintura y superficie': ['Rayón', 'Descolorido', 'Burbuja', 'Repintado'],
-  'Lunas y parabrisas': ['Rajadura', 'Chip', 'Empañado', 'Manchado'],
-  'Luces exteriores': ['Empañado', 'Opaco', 'No funciona', 'Intermitente'],
-  'Neumáticos y aros': ['Desgaste irregular', 'Presión baja', 'Agrietado'],
-  'Sistemas funcionales': ['Intermitente', 'Lento', 'Ruidoso', 'No funciona'],
+  'Parte inferior del vehículo': ['Fuga leve', 'Corrosión leve', 'Golpe menor', 'Óxido superficial'],
+  'Suspensión y dirección': ['Holgura leve', 'Ruido al girar', 'Vibración leve', 'Desgaste parcial'],
+  'Sistema de frenos': ['Desgaste parcial', 'Ruido leve al frenar', 'Pastillas bajas'],
+  'Prueba de ruta': ['Vibración leve', 'Ruido leve', 'Tira levemente', 'Respuesta lenta'],
+  'Estructura y alineación': ['Desalineado leve', 'Repintado parcial', 'Masillado leve', 'Golpe menor'],
+  'Pintura y superficie': ['Rayón superficial', 'Descolorido', 'Burbuja', 'Repintado parcial'],
+  'Lunas y parabrisas': ['Rajadura pequeña', 'Chip menor', 'Empañado'],
+  'Luces exteriores': ['Empañado', 'Opaco', 'Luz tenue'],
+  'Neumáticos y aros': ['Desgaste irregular', 'Presión baja', 'Agrietado leve'],
+  'Sistemas funcionales': ['Respuesta lenta', 'Ruidoso', 'Funciona parcial'],
   'Seguridad interior': ['Trabado', 'Flojo', 'Testigo encendido'],
-  'Estética interior': ['Manchado', 'Rasgado', 'Desgastado', 'Roto'],
+  'Estética interior': ['Manchado', 'Desgaste leve', 'Rayón', 'Suciedad'],
+};
+
+const _defectoChipsBySubcategory = <String, List<String>>{
+  'Documentación': ['Falsificado', 'Ausente', 'Vencido sin renovar'],
+  'Identificación': ['Adulterado', 'No corresponde', 'Regrabado'],
+  'Accesorios y elementos obligatorios': ['Ausente', 'Inoperativo', 'Dañado'],
+  'Motor': ['Fuga severa', 'Golpeteo interno', 'Humo excesivo', 'No enciende'],
+  'Parte inferior del vehículo': ['Fuga severa', 'Corrosión estructural', 'Golpe profundo', 'Perforación'],
+  'Suspensión y dirección': ['Holgura severa', 'Componente roto', 'Dirección dura', 'Amortiguador vencido'],
+  'Sistema de frenos': ['Sin freno', 'Disco fisurado', 'Pastillas gastadas', 'Fuga de líquido'],
+  'Prueba de ruta': ['Vibración fuerte', 'Ruido fuerte', 'No frena bien', 'Caja patina'],
+  'Estructura y alineación': ['Chasis doblado', 'Soldadura estructural', 'Golpe severo', 'Siniestro previo'],
+  'Pintura y superficie': ['Golpe profundo', 'Corrosión', 'Abolladura severa', 'Óxido pasante'],
+  'Lunas y parabrisas': ['Rajadura completa', 'Luna rota', 'Filtración de agua'],
+  'Luces exteriores': ['No funciona', 'Faro roto', 'Cableado dañado'],
+  'Neumáticos y aros': ['Llanta lisa', 'Aro doblado', 'Grieta profunda', 'Llanta reencauchada'],
+  'Sistemas funcionales': ['No funciona', 'Cortocircuito', 'Error crítico scanner'],
+  'Seguridad interior': ['Cinturón roto', 'Airbag inactivo', 'Testigo crítico'],
+  'Estética interior': ['Rasgado severo', 'Roto', 'Quemadura', 'Pieza faltante'],
 };
 
 class ItemResult {

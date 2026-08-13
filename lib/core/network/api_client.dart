@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:app_flutter_verificarlo/core/constants/api_endpoints.dart';
 import 'package:app_flutter_verificarlo/core/storage/secure_storage.dart';
 import 'package:app_flutter_verificarlo/core/network/api_exception.dart';
@@ -23,16 +24,11 @@ class ApiClient {
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
+        debugPrint('API ${options.method} ${options.path} | token: ${token != null ? '${token.substring(0, 20)}...' : 'NULL'}');
         handler.next(options);
       },
       onError: (error, handler) {
-        if (error.response?.statusCode == 401) {
-          // ponytail: only clear session for non-login 401s, skip device endpoints
-          final path = error.requestOptions.path;
-          if (!path.contains('/devices/')) {
-            SecureStorage.clearAll();
-          }
-        }
+        debugPrint('API ERROR ${error.response?.statusCode} on ${error.requestOptions.path}: ${error.response?.data}');
         handler.next(error);
       },
     ));

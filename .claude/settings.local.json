@@ -21,7 +21,25 @@
       "WebSearch",
       "WebFetch(domain:elefanterevops.com)",
       "WebFetch(domain:www.hubspot.com)",
-      "WebFetch(domain:smartprocessflow.com)"
+      "WebFetch(domain:smartprocessflow.com)",
+      "Bash(flutter doctor *)",
+      "Read(//home/danielc/snap/**)",
+      "Read(//opt/flutter/bin/**)",
+      "Read(//home/danielc/.local/share/**)",
+      "Read(//usr/lib/**)",
+      "Bash(java --version)",
+      "Bash(archlinux-java status *)",
+      "Bash(update-alternatives --list java)",
+      "Read(//opt/**)",
+      "Read(//home/danielc/**)",
+      "Read(//home/danielc/.sdkman/candidates/**)",
+      "Bash(~/flutter/bin/flutter config *)",
+      "Bash(pacman -Qs jdk)",
+      "Bash(pacman -Qs jre)",
+      "Bash(pacman -Ss jdk17)",
+      "Bash(pacman -Ql jdk17-openjdk)",
+      "Bash(flutter config *)",
+      "Bash(./gradlew wrapper *)"
     ]
   }
 }

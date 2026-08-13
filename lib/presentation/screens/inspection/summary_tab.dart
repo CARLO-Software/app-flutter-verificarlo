@@ -11,15 +11,18 @@ import 'package:app_flutter_verificarlo/core/constants/app_colors.dart';
 import 'package:app_flutter_verificarlo/core/network/api_client.dart';
 import 'package:app_flutter_verificarlo/core/services/checklist_service.dart';
 import 'package:app_flutter_verificarlo/core/services/verdict_service.dart';
+import 'package:app_flutter_verificarlo/data/models/booking_model.dart';
 import 'package:app_flutter_verificarlo/data/models/checklist_models.dart';
 import 'package:app_flutter_verificarlo/presentation/providers/checklist_controller.dart';
 import 'package:app_flutter_verificarlo/presentation/providers/dashboard_provider.dart';
 import 'package:app_flutter_verificarlo/presentation/widgets/score_circle.dart';
+import 'package:app_flutter_verificarlo/core/storage/secure_storage.dart';
 import 'package:app_flutter_verificarlo/presentation/widgets/voice_button.dart';
 
 class SummaryTab extends ConsumerStatefulWidget {
-  final int bookingId;
-  const SummaryTab({super.key, required this.bookingId});
+  final BookingModel booking;
+  int get bookingId => booking.id;
+  const SummaryTab({super.key, required this.booking});
 
   @override
   ConsumerState<SummaryTab> createState() => _SummaryTabState();
@@ -266,8 +269,9 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
       final checklistData = checkState.results.map((k, v) => MapEntry(k, v.toJson()));
 
       await ApiClient.instance.post(
-        ApiEndpoints.bookingComplete(widget.bookingId),
+        ApiEndpoints.reports,
         data: {
+          'bookingId': widget.bookingId,
           'overallStatus': verdict,
           'executiveSummary': _summaryController.text,
           'estimatedCost': double.tryParse(_costController.text) ?? 0,
@@ -314,10 +318,14 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/informe-${widget.bookingId}.pdf');
 
+      final token = await SecureStorage.getToken();
       final response = await Dio().get<List<int>>(
         url,
         options: Options(
-          headers: {'x-api-key': ApiEndpoints.nextApiKey},
+          headers: {
+            'x-api-key': ApiEndpoints.nextApiKey,
+            if (token != null) 'Authorization': 'Bearer $token',
+          },
           responseType: ResponseType.bytes,
         ),
       );

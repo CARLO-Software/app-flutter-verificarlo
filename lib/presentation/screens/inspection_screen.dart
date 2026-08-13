@@ -32,7 +32,7 @@ class InspectionScreen extends ConsumerWidget {
           children: [
             InfoTab(booking: booking),
             ChecklistTab(bookingId: booking.id),
-            SummaryTab(bookingId: booking.id),
+            SummaryTab(booking: booking),
           ],
         ),
       ),
