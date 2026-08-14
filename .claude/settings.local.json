@@ -39,7 +39,8 @@
       "Bash(pacman -Ss jdk17)",
       "Bash(pacman -Ql jdk17-openjdk)",
       "Bash(flutter config *)",
-      "Bash(./gradlew wrapper *)"
+      "Bash(./gradlew wrapper *)",
+      "Bash(git *)"
     ]
   }
 }

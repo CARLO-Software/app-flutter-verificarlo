@@ -310,10 +310,13 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
     }
   }
 
-  Future<void> _downloadAndOpenPdf() async {
+  Future<void> _downloadAndOpenPdf({int attempt = 1}) async {
     try {
+      // ponytail: delay before first attempt — backend needs time to finalize the report
+      if (attempt == 1) await Future.delayed(const Duration(seconds: 3));
+
       final url = '${ApiEndpoints.nextBaseUrl}${ApiEndpoints.reportPdf(widget.bookingId)}';
-      debugPrint('PDF download: $url');
+      debugPrint('PDF download (attempt $attempt): $url');
 
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/informe-${widget.bookingId}.pdf');
@@ -337,6 +340,10 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
         await launchUrl(uri);
       }
     } catch (e) {
+      if (attempt < 2) {
+        await Future.delayed(const Duration(seconds: 3));
+        return _downloadAndOpenPdf(attempt: attempt + 1);
+      }
       if (!mounted) return;
       debugPrint('PDF download error: $e');
       // ponytail: PDF download is best-effort, inspection already saved

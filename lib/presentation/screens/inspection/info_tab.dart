@@ -1,43 +1,109 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:app_flutter_verificarlo/core/constants/app_colors.dart';
+import 'package:app_flutter_verificarlo/core/constants/api_endpoints.dart';
+import 'package:app_flutter_verificarlo/core/network/api_client.dart';
 import 'package:app_flutter_verificarlo/data/models/booking_model.dart';
 
-class InfoTab extends StatelessWidget {
+class InfoTab extends StatefulWidget {
   final BookingModel booking;
   const InfoTab({super.key, required this.booking});
 
   @override
+  State<InfoTab> createState() => _InfoTabState();
+}
+
+class _InfoTabState extends State<InfoTab> {
+  final _plateCtrl = TextEditingController();
+  bool _sending = false;
+  String? _sentPlate;
+
+  bool get _needsPlate =>
+      widget.booking.vehiclePlate == null &&
+      _sentPlate == null &&
+      widget.booking.vehicleInspectionId != null;
+
+  Future<void> _submitPlate() async {
+    final plate = _plateCtrl.text;
+    if (!RegExp(r'^[A-Z]{3}-\d{3}$').hasMatch(plate)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Formato inválido. Use ABC-123')),
+      );
+      return;
+    }
+    setState(() => _sending = true);
+    try {
+      await ApiClient.instance.patch(
+        ApiEndpoints.mechanicAction(widget.booking.vehicleInspectionId!),
+        data: {'action': 'register_plate', 'plate': plate},
+      );
+      setState(() {
+        _sentPlate = plate;
+        _sending = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Placa enviada correctamente')),
+        );
+      }
+    } catch (e) {
+      setState(() => _sending = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al enviar placa: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _plateCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final b = widget.booking;
+    final formattedDate = DateFormat("EEEE d 'de' MMMM, yyyy", 'es').format(b.startTime);
+    final formattedTime = '${b.timeDisplay} (hora Lima)';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _Section(title: 'Vehículo', children: [
-            _InfoRow('Marca', booking.vehicleBrand.isNotEmpty ? booking.vehicleBrand : '-'),
-            _InfoRow('Modelo', booking.vehicleModel.isNotEmpty ? booking.vehicleModel : '-'),
-            _InfoRow('Año', booking.vehicleYear > 0 ? '${booking.vehicleYear}' : '-'),
-            _InfoRow('Placa', booking.vehiclePlate ?? 'Sin registrar'),
+            _InfoRow('Marca', b.vehicleBrand.isNotEmpty ? b.vehicleBrand : '-'),
+            _InfoRow('Modelo', b.vehicleModel.isNotEmpty ? b.vehicleModel : '-'),
+            _InfoRow('Año', b.vehicleYear > 0 ? '${b.vehicleYear}' : '-'),
+            if (!_needsPlate)
+              _InfoRow('Placa', _sentPlate ?? b.vehiclePlate ?? '-'),
+            if (_needsPlate) _buildPlateInput(),
           ]),
           const SizedBox(height: 16),
 
           _Section(title: 'Cliente', children: [
-            _InfoRow('Nombre', booking.clientName.isNotEmpty ? booking.clientName : '-'),
-            if (booking.clientPhone != null) _InfoRow('Teléfono', booking.clientPhone!),
-            if (booking.clientEmail != null) _InfoRow('Email', booking.clientEmail!),
+            _InfoRow('Nombre', b.clientName.isNotEmpty ? b.clientName : '-'),
+            if (b.clientPhone != null) _InfoRow('Teléfono', b.clientPhone!),
+            if (b.clientEmail != null) _InfoRow('Email', b.clientEmail!),
+            if (b.address != null && b.address!.isNotEmpty)
+              _InfoRow('Dirección', b.address!),
+            if (b.district != null && b.district!.isNotEmpty)
+              _InfoRow('Distrito', b.district!),
           ]),
           const SizedBox(height: 16),
 
           _Section(title: 'Inspección', children: [
-            _InfoRow('Plan', booking.planTitle.isNotEmpty ? booking.planTitle : '-'),
-            _InfoRow('Fecha', booking.date.isNotEmpty ? booking.date : '-'),
-            _InfoRow('Hora', booking.timeSlot.isNotEmpty ? booking.timeSlot : '-'),
-            _InfoRow('Código', booking.code),
+            _InfoRow('Plan', b.planTitle.isNotEmpty ? b.planTitle : '-'),
+            _InfoRow('Fecha', formattedDate),
+            _InfoRow('Hora', formattedTime),
+            _InfoRow('Código', b.code),
           ]),
 
           const SizedBox(height: 32),
 
-          // Siguiente → lleva al tab de Checklist
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
@@ -51,6 +117,60 @@ class InfoTab extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildPlateInput() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Placa no registrada — ingrese manualmente:',
+            style: TextStyle(color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _plateCtrl,
+                  textCapitalization: TextCapitalization.characters,
+                  inputFormatters: [_PlateFormatter()],
+                  decoration: const InputDecoration(
+                    hintText: 'ABC-123',
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: _sending || _plateCtrl.text.length < 7 ? null : _submitPlate,
+                child: _sending
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Enviar'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlateFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    var text = newValue.text.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+    if (text.length > 6) text = text.substring(0, 6);
+    if (text.length > 3) text = '${text.substring(0, 3)}-${text.substring(3)}';
+    return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
   }
 }
 

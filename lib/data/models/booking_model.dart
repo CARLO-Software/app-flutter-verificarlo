@@ -19,6 +19,8 @@ class BookingModel {
   final String clientName;
   final String? clientPhone;
   final String? clientEmail;
+  final String? address;
+  final String? district;
 
   // Plan
   final String planTitle;
@@ -46,6 +48,8 @@ class BookingModel {
     required this.clientName,
     this.clientPhone,
     this.clientEmail,
+    this.address,
+    this.district,
     required this.planTitle,
     required this.planType,
     this.reportId,
@@ -90,6 +94,8 @@ class BookingModel {
       clientName: client?['name'] as String? ?? '',
       clientPhone: client?['phone'] as String?,
       clientEmail: client?['email'] as String?,
+      address: client?['address'] as String?,
+      district: client?['district'] as String?,
       planTitle: plan?['title'] as String? ?? '',
       planType: plan?['type'] as String? ?? '',
       reportId: report?['id'] as int?,
