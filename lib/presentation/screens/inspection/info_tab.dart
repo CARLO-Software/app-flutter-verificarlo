@@ -19,10 +19,11 @@ class _InfoTabState extends State<InfoTab> {
   bool _sending = false;
   String? _sentPlate;
 
+  bool _editingPlate = false;
+
   bool get _needsPlate =>
-      widget.booking.vehiclePlate == null &&
-      _sentPlate == null &&
-      widget.booking.vehicleInspectionId != null;
+      (widget.booking.vehiclePlate == null && _sentPlate == null && widget.booking.vehicleInspectionId != null)
+      || _editingPlate;
 
   Future<void> _submitPlate() async {
     final plate = _plateCtrl.text;
@@ -41,6 +42,7 @@ class _InfoTabState extends State<InfoTab> {
       setState(() {
         _sentPlate = plate;
         _sending = false;
+        _editingPlate = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -79,7 +81,23 @@ class _InfoTabState extends State<InfoTab> {
             _InfoRow('Modelo', b.vehicleModel.isNotEmpty ? b.vehicleModel : '-'),
             _InfoRow('Año', b.vehicleYear > 0 ? '${b.vehicleYear}' : '-'),
             if (!_needsPlate)
-              _InfoRow('Placa', _sentPlate ?? b.vehiclePlate ?? '-'),
+              Row(
+                children: [
+                  const SizedBox(width: 0, child: SizedBox.shrink()),
+                  Expanded(child: _InfoRow('Placa', _sentPlate ?? b.vehiclePlate ?? '-')),
+                  if (widget.booking.vehicleInspectionId != null)
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 18),
+                      onPressed: () => setState(() {
+                        _editingPlate = true;
+                        _plateCtrl.text = (_sentPlate ?? b.vehiclePlate ?? '').replaceAll('-', '');
+                      }),
+                      tooltip: 'Editar placa',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                ],
+              ),
             if (_needsPlate) _buildPlateInput(),
           ]),
           const SizedBox(height: 16),
@@ -114,6 +132,7 @@ class _InfoTabState extends State<InfoTab> {
               label: const Text('Siguiente'),
             ),
           ),
+          const SizedBox(height: 32),
         ],
       ),
     );

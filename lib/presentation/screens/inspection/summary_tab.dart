@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:app_flutter_verificarlo/core/constants/api_endpoints.dart';
 import 'package:app_flutter_verificarlo/core/constants/app_colors.dart';
 import 'package:app_flutter_verificarlo/core/network/api_client.dart';
@@ -86,7 +86,7 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 2.2,
+            childAspectRatio: 1.9,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
             children: categories.map((cat) {
@@ -98,19 +98,21 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(cat.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      Text(cat.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13), overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 4),
                       Row(
                         children: [
                           Text('${score.score.round()}%', style: TextStyle(fontWeight: FontWeight.bold, color: _statusColor(score.status))),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: _statusColor(score.status).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(4),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: _statusColor(score.status).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(score.status, style: TextStyle(fontSize: 10, color: _statusColor(score.status), fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
                             ),
-                            child: Text(score.status, style: TextStyle(fontSize: 10, color: _statusColor(score.status), fontWeight: FontWeight.w600)),
                           ),
                         ],
                       ),
@@ -266,25 +268,59 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
     setState(() => _submitting = true);
 
     try {
-      final checklistData = checkState.results.map((k, v) => MapEntry(k, v.toJson()));
+      final api = ApiClient.instance;
 
-      await ApiClient.instance.post(
-        ApiEndpoints.reports,
-        data: {
-          'bookingId': widget.bookingId,
-          'overallStatus': verdict,
-          'executiveSummary': _summaryController.text,
-          'estimatedCost': double.tryParse(_costController.text) ?? 0,
-          'realMileage': int.tryParse(_mileageController.text),
-          'hasSiniestro': _hasSiniestro,
-          'hasKmAdulterado': _hasKmAdulterado,
-          'checklistResults': jsonEncode(checklistData),
-        },
-      );
+      // 1. Create report
+      final response = await api.post(ApiEndpoints.reports, data: {'bookingId': widget.bookingId});
+      final reportId = response.data['report']['id'] as int;
+
+      // 2. Upload checklist via section: "checklist"
+      // ponytail: backend expects prefixes legal-, mec-, car-, int- (dash not underscore, "legal" not "leg")
+      String mapKey(String key) => key
+          .replaceFirst('leg_', 'legal-')
+          .replaceFirst('mec_', 'mec-')
+          .replaceFirst('car_', 'car-')
+          .replaceFirst('int_', 'int-');
+
+      final checklistResults = <String, Map<String, dynamic>>{};
+      for (final entry in checkState.results.entries) {
+        final r = entry.value;
+        if (r.status == null) continue;
+        checklistResults[mapKey(entry.key)] = {
+          'status': switch (r.status!) {
+            ItemStatus.ok => 'OK',
+            ItemStatus.observacion => 'OBSERVACION',
+            ItemStatus.defecto => 'DEFECTO',
+            ItemStatus.noAplica => 'NO_APLICA',
+          },
+          if (r.comment.isNotEmpty) 'comment': r.comment,
+          if (r.selectedChips.isNotEmpty) 'selectedChips': r.selectedChips,
+        };
+      }
+      await api.patch(ApiEndpoints.reportSections(reportId), data: {
+        'section': 'checklist',
+        'data': {'checklistResults': checklistResults},
+      });
+
+      // 3+4. Mark mechanical inspection start → complete
+      final viId = widget.booking.vehicleInspectionId;
+      if (viId != null) {
+        await api.patch(ApiEndpoints.mechanicAction(viId), data: {'action': 'start'});
+        await api.patch(ApiEndpoints.mechanicAction(viId), data: {'action': 'complete'});
+      }
+
+      // 5. Finalize report
+      await api.post(ApiEndpoints.reportComplete(reportId), data: {
+        'mechanicalVerdict': verdict,
+        'hasSiniestro': _hasSiniestro,
+        'hasKilometrajeAdulterado': _hasKmAdulterado,
+        'executiveSummary': _summaryController.text,
+        'estimatedRepairCost': double.tryParse(_costController.text) ?? 0,
+        'mileageAtInspection': int.tryParse(_mileageController.text),
+      });
 
       if (!mounted) return;
 
-      // Refresh dashboard lists
       ref.invalidate(pendingInspectionsProvider);
       ref.invalidate(completedInspectionsProvider);
 
@@ -295,15 +331,21 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
         ),
       );
 
-      // Download and open PDF
+      // 6. Download PDF
       await _downloadAndOpenPdf();
 
       if (!mounted) return;
-      context.pop(); // Back to dashboard
+      context.pop();
     } catch (e) {
       if (!mounted) return;
+      String errorDetail = e.toString();
+      if (e is DioException && e.response != null) {
+        final data = e.response!.data;
+        final body = data is List<int> ? utf8.decode(data) : '$data';
+        errorDetail = 'Status ${e.response!.statusCode}: $body';
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al finalizar: $e')),
+        SnackBar(content: Text('Error al finalizar: $errorDetail')),
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -312,8 +354,8 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
 
   Future<void> _downloadAndOpenPdf({int attempt = 1}) async {
     try {
-      // ponytail: delay before first attempt — backend needs time to finalize the report
-      if (attempt == 1) await Future.delayed(const Duration(seconds: 3));
+      // ponytail: small delay on retry only, flow already completes inspection before this
+      if (attempt > 1) await Future.delayed(const Duration(seconds: 3));
 
       final url = '${ApiEndpoints.nextBaseUrl}${ApiEndpoints.reportPdf(widget.bookingId)}';
       debugPrint('PDF download (attempt $attempt): $url');
@@ -330,25 +372,31 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
             if (token != null) 'Authorization': 'Bearer $token',
           },
           responseType: ResponseType.bytes,
+          receiveTimeout: const Duration(seconds: 30),
+          sendTimeout: const Duration(seconds: 15),
         ),
       );
 
       await file.writeAsBytes(response.data!);
 
-      final uri = Uri.file(file.path);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      }
+      await OpenFilex.open(file.path);
     } catch (e) {
-      if (attempt < 2) {
-        await Future.delayed(const Duration(seconds: 3));
+      String errorDetail = e.toString();
+      if (e is DioException && e.response != null) {
+        final data = e.response!.data;
+        final body = data is List<int> ? utf8.decode(data) : '$data';
+        errorDetail = 'Status ${e.response!.statusCode}: $body';
+      }
+      debugPrint('PDF download error (attempt $attempt): $errorDetail');
+
+      // ponytail: 3 attempts total (~13s window), bump if backend is slower
+      if (attempt < 3) {
         return _downloadAndOpenPdf(attempt: attempt + 1);
       }
       if (!mounted) return;
-      debugPrint('PDF download error: $e');
       // ponytail: PDF download is best-effort, inspection already saved
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Inspección guardada. Error descargando PDF: $e')),
+        SnackBar(content: Text('Inspección guardada. Error PDF: $errorDetail')),
       );
     }
   }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:app_flutter_verificarlo/core/storage/secure_storage.dart';
 import 'package:app_flutter_verificarlo/data/models/notification_model.dart';
 import 'package:app_flutter_verificarlo/data/repositories/notification_repository.dart';
 
@@ -32,6 +33,9 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   }
 
   Future<void> load() async {
+    // ponytail: skip if no session, avoids 401 on cold start / after logout
+    final token = await SecureStorage.getToken();
+    if (token == null) return;
     try {
       final items = await _repo.getAll();
       if (mounted) state = state.copyWith(items: items, isLoading: false, error: null);

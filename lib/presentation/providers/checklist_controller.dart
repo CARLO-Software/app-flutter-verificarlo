@@ -115,10 +115,7 @@ class ChecklistNotifier extends StateNotifier<ChecklistState> {
   Future<void> _save() async {
     final data = state.results.map((k, v) => MapEntry(k, v.toJson()));
     await LocalStorage.saveChecklist(reportId, data);
-
-    // Sync to server
-    final sections = {'checklistResults': jsonEncode(data)};
-    ref.read(syncProvider.notifier).enqueueAndSync(reportId, sections);
+    // ponytail: sync to server happens at finalize, not per-keystroke — reportId isn't known until POST /api/reports
   }
 
   @override

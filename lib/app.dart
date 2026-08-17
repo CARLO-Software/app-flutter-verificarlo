@@ -24,13 +24,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = auth.status == AuthStatus.authenticated;
       final isLoginRoute = state.matchedLocation == '/login';
 
-      if (auth.status == AuthStatus.unknown) return null;
+      if (auth.status == AuthStatus.unknown) return '/splash';
       if (!isLoggedIn && !isLoginRoute) return '/login';
       if (isLoggedIn && isLoginRoute) return '/';
 
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (_, __) => const _SplashScreen(),
+      ),
       GoRoute(
         path: '/login',
         builder: (_, __) => const LoginScreen(),
@@ -112,6 +116,22 @@ class _AppShell extends ConsumerWidget {
           ),
           const NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Perfil'),
         ],
+      ),
+    );
+  }
+}
+
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Image.asset(
+        'assets/images/foto_carga.jpg',
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
       ),
     );
   }
