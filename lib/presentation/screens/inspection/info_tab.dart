@@ -26,6 +26,13 @@ class _InfoTabState extends State<InfoTab> {
       || _editingPlate;
 
   Future<void> _submitPlate() async {
+    final viId = widget.booking.vehicleInspectionId;
+    if (viId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se puede registrar placa sin inspección asignada')),
+      );
+      return;
+    }
     final plate = _plateCtrl.text;
     if (!RegExp(r'^[A-Z]{3}-\d{3}$').hasMatch(plate)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -36,7 +43,7 @@ class _InfoTabState extends State<InfoTab> {
     setState(() => _sending = true);
     try {
       await ApiClient.instance.patch(
-        ApiEndpoints.mechanicAction(widget.booking.vehicleInspectionId!),
+        ApiEndpoints.mechanicAction(viId),
         data: {'action': 'register_plate', 'plate': plate},
       );
       setState(() {
@@ -85,8 +92,7 @@ class _InfoTabState extends State<InfoTab> {
                 children: [
                   const SizedBox(width: 0, child: SizedBox.shrink()),
                   Expanded(child: _InfoRow('Placa', _sentPlate ?? b.vehiclePlate ?? '-')),
-                  if (widget.booking.vehicleInspectionId != null)
-                    IconButton(
+                  IconButton(
                       icon: const Icon(Icons.edit, size: 18),
                       onPressed: () => setState(() {
                         _editingPlate = true;
