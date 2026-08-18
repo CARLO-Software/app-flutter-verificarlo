@@ -69,6 +69,7 @@ class ChecklistNotifier extends StateNotifier<ChecklistState> {
     } else {
       existing.selectedChips.add(chip);
     }
+    existing.comment = existing.selectedChips.join(', ');
     results[itemId] = existing;
     state = state.copyWith(results: results);
     _scheduleSave();

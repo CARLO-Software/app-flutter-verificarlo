@@ -26,25 +26,18 @@ class _InfoTabState extends State<InfoTab> {
       || _editingPlate;
 
   Future<void> _submitPlate() async {
-    final viId = widget.booking.vehicleInspectionId;
-    if (viId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se puede registrar placa sin inspección asignada')),
-      );
-      return;
-    }
     final plate = _plateCtrl.text;
-    if (!RegExp(r'^[A-Z]{3}-\d{3}$').hasMatch(plate)) {
+    if (!RegExp(r'^[A-Z0-9]{3}-[A-Z0-9]{3}$').hasMatch(plate)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Formato inválido. Use ABC-123')),
+        const SnackBar(content: Text('Formato inválido. Use XXX-XXX (letras o números)')),
       );
       return;
     }
     setState(() => _sending = true);
     try {
       await ApiClient.instance.patch(
-        ApiEndpoints.mechanicAction(viId),
-        data: {'action': 'register_plate', 'plate': plate},
+        ApiEndpoints.bookingVehicle(widget.booking.id),
+        data: {'plate': plate},
       );
       setState(() {
         _sentPlate = plate;
@@ -163,7 +156,7 @@ class _InfoTabState extends State<InfoTab> {
                   textCapitalization: TextCapitalization.characters,
                   inputFormatters: [_PlateFormatter()],
                   decoration: const InputDecoration(
-                    hintText: 'ABC-123',
+                    hintText: 'XXX-XXX',
                     isDense: true,
                     border: OutlineInputBorder(),
                   ),

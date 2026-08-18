@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:app_flutter_verificarlo/core/constants/app_colors.dart';
 import 'package:app_flutter_verificarlo/data/models/checklist_models.dart';
 import 'package:app_flutter_verificarlo/presentation/providers/checklist_controller.dart';
+import 'package:app_flutter_verificarlo/presentation/providers/photo_controller.dart';
 import 'package:app_flutter_verificarlo/presentation/widgets/status_buttons.dart';
 import 'package:app_flutter_verificarlo/presentation/widgets/voice_button.dart';
 
@@ -135,6 +137,12 @@ class _CategoryContent extends ConsumerWidget {
               onStatusChanged: (s) => notifier.setStatus(item.id, s),
               onCommentChanged: (c) => notifier.setComment(item.id, c),
               onChipToggled: (c) => notifier.toggleChip(item.id, c),
+              onAddPhoto: () async {
+                final photo = ref.read(photoControllerProvider);
+                final path = await photo.capturePhoto();
+                if (path != null) notifier.addPhoto(item.id, path);
+              },
+              onRemovePhoto: (url) => notifier.removePhoto(item.id, url),
             ),
           const SizedBox(height: 12),
         ],
@@ -202,6 +210,8 @@ class _ItemTile extends StatefulWidget {
   final ValueChanged<ItemStatus?> onStatusChanged;
   final ValueChanged<String> onCommentChanged;
   final ValueChanged<String> onChipToggled;
+  final VoidCallback onAddPhoto;
+  final ValueChanged<String> onRemovePhoto;
 
   const _ItemTile({
     required this.item,
@@ -210,6 +220,8 @@ class _ItemTile extends StatefulWidget {
     required this.onStatusChanged,
     required this.onCommentChanged,
     required this.onChipToggled,
+    required this.onAddPhoto,
+    required this.onRemovePhoto,
   });
 
   @override
@@ -336,7 +348,76 @@ class _ItemTileState extends State<_ItemTile> {
             style: const TextStyle(fontSize: 13),
             maxLines: 1,
           ),
+          const SizedBox(height: 6),
+          _PhotoRow(
+            photoUrls: widget.result?.photoUrls ?? [],
+            onAdd: widget.onAddPhoto,
+            onRemove: widget.onRemovePhoto,
+          ),
           const Divider(height: 16),
+        ],
+      ),
+    );
+  }
+}
+
+class _PhotoRow extends StatelessWidget {
+  final List<String> photoUrls;
+  final VoidCallback onAdd;
+  final ValueChanged<String> onRemove;
+
+  const _PhotoRow({required this.photoUrls, required this.onAdd, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 56,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          if (photoUrls.length < 5)
+            GestureDetector(
+              onTap: onAdd,
+              child: Container(
+                width: 56,
+                height: 56,
+                margin: const EdgeInsets.only(right: 6),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.camera_alt, color: AppColors.textSecondary),
+              ),
+            ),
+          for (final url in photoUrls)
+            Stack(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  margin: const EdgeInsets.only(right: 6),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    image: DecorationImage(
+                      image: url.startsWith('http') ? NetworkImage(url) as ImageProvider : FileImage(File(url)),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 0,
+                  right: 6,
+                  child: GestureDetector(
+                    onTap: () => onRemove(url),
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                      child: const Icon(Icons.close, size: 14, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );

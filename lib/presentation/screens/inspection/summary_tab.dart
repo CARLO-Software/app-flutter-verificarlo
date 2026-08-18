@@ -15,6 +15,7 @@ import 'package:app_flutter_verificarlo/data/models/booking_model.dart';
 import 'package:app_flutter_verificarlo/data/models/checklist_models.dart';
 import 'package:app_flutter_verificarlo/presentation/providers/checklist_controller.dart';
 import 'package:app_flutter_verificarlo/presentation/providers/dashboard_provider.dart';
+import 'package:app_flutter_verificarlo/data/repositories/photo_repository.dart';
 import 'package:app_flutter_verificarlo/presentation/widgets/score_circle.dart';
 import 'package:app_flutter_verificarlo/core/storage/secure_storage.dart';
 import 'package:app_flutter_verificarlo/presentation/widgets/voice_button.dart';
@@ -308,7 +309,28 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
         'data': {'checklistResults': checklistResults},
       });
 
-      // 3+4. Mark mechanical inspection start → complete
+      // 3. Upload photos (best-effort, don't block finalization)
+      final photoRepo = PhotoRepository();
+      int photoErrors = 0;
+      for (final entry in checkState.results.entries) {
+        for (final path in entry.value.photoUrls) {
+          if (!path.startsWith('http')) {
+            try {
+              await photoRepo.upload(reportId, path, mapKey(entry.key));
+            } catch (e) {
+              photoErrors++;
+              debugPrint('Photo upload error: $path → $e');
+            }
+          }
+        }
+      }
+      if (photoErrors > 0 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$photoErrors foto(s) no se pudieron subir')),
+        );
+      }
+
+      // 4+5. Mark mechanical inspection start → complete
       final viId = widget.booking.vehicleInspectionId;
       if (viId != null) {
         await api.patch(ApiEndpoints.mechanicAction(viId), data: {'action': 'start'});
