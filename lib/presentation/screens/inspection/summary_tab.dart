@@ -344,9 +344,6 @@ class _SummaryTabState extends ConsumerState<SummaryTab>
           .replaceFirst('car_', 'car-')
           .replaceFirst('int_', 'int-');
 
-      final allItems = InspectionCategory.buildAll().expand((c) => c.items).toList();
-      final itemLookup = {for (final item in allItems) item.id: item};
-
       final checklistResults = <String, Map<String, dynamic>>{};
       for (final entry in checkState.results.entries) {
         final r = entry.value;
@@ -362,8 +359,6 @@ class _SummaryTabState extends ConsumerState<SummaryTab>
             ItemStatus.defecto => 'DEFECTO',
             ItemStatus.noAplica => 'NO_APLICA',
           },
-          if (item != null) 'name': item.name,
-          if (item != null) 'subcategory': item.subcategory,
           if (r.comment.isNotEmpty) 'comment': r.comment,
           if (r.selectedChips.isNotEmpty) 'selectedChips': r.selectedChips,
         };
