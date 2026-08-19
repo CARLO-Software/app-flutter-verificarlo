@@ -27,17 +27,17 @@ class _InfoTabState extends State<InfoTab> {
 
   Future<void> _submitPlate() async {
     final plate = _plateCtrl.text;
-    if (!RegExp(r'^[A-Z]{3}-\d{3}$').hasMatch(plate)) {
+    if (!RegExp(r'^[A-Z0-9]{3}-[A-Z0-9]{3}$').hasMatch(plate)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Formato inválido. Use ABC-123')),
+        const SnackBar(content: Text('Formato inválido. Use XXX-XXX (letras o números)')),
       );
       return;
     }
     setState(() => _sending = true);
     try {
       await ApiClient.instance.patch(
-        ApiEndpoints.mechanicAction(widget.booking.vehicleInspectionId!),
-        data: {'action': 'register_plate', 'plate': plate},
+        ApiEndpoints.bookingVehicle(widget.booking.id),
+        data: {'plate': plate},
       );
       setState(() {
         _sentPlate = plate;
@@ -85,8 +85,7 @@ class _InfoTabState extends State<InfoTab> {
                 children: [
                   const SizedBox(width: 0, child: SizedBox.shrink()),
                   Expanded(child: _InfoRow('Placa', _sentPlate ?? b.vehiclePlate ?? '-')),
-                  if (widget.booking.vehicleInspectionId != null)
-                    IconButton(
+                  IconButton(
                       icon: const Icon(Icons.edit, size: 18),
                       onPressed: () => setState(() {
                         _editingPlate = true;
@@ -157,7 +156,7 @@ class _InfoTabState extends State<InfoTab> {
                   textCapitalization: TextCapitalization.characters,
                   inputFormatters: [_PlateFormatter()],
                   decoration: const InputDecoration(
-                    hintText: 'ABC-123',
+                    hintText: 'XXX-XXX',
                     isDense: true,
                     border: OutlineInputBorder(),
                   ),

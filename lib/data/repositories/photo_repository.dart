@@ -8,8 +8,8 @@ class PhotoRepository {
 
   Future<InspectionPhoto> upload(int reportId, String filePath, String? itemId) async {
     final formData = FormData.fromMap({
-      'photo': await MultipartFile.fromFile(filePath),
-      if (itemId != null) 'itemId': itemId,
+      'file': await MultipartFile.fromFile(filePath),
+      if (itemId != null) 'checklistItemId': itemId,
     });
     // ponytail: token injected by dio interceptor, just override content-type
     final response = await _api.dio.post(

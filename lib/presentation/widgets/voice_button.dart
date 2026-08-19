@@ -32,7 +32,14 @@ class _VoiceButtonState extends State<VoiceButton> {
     }
 
     final available = await _speech.initialize();
-    if (!available) return;
+    if (!available) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Micrófono no disponible. Cierre la llamada e intente de nuevo.')),
+        );
+      }
+      return;
+    }
 
     setState(() => _isListening = true);
     widget.onListeningChanged?.call(true);

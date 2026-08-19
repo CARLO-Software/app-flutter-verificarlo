@@ -21,8 +21,9 @@ class ApiEndpoints {
   static String mechanicAction(int id) =>
       '/api/vehicle-inspections/$id/mechanic';
 
-  // Booking completion
+  // Booking
   static String bookingComplete(int id) => '/api/bookings/$id/complete';
+  static String bookingVehicle(int id) => '/api/bookings/$id/vehicle';
 
   // Inspector Schedule
   static const String inspectorSchedule = '/api/inspector/schedule';
