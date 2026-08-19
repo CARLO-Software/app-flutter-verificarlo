@@ -28,11 +28,31 @@ class InspectionScreen extends ConsumerWidget {
             ],
           ),
         ),
-        body: TabBarView(
+        body: Column(
           children: [
-            InfoTab(booking: booking),
-            ChecklistTab(bookingId: booking.id),
-            SummaryTab(booking: booking),
+            if (booking.isFinalized)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                color: AppColors.success.withValues(alpha: 0.15),
+                child: const Row(
+                  children: [
+                    Icon(Icons.lock, size: 16, color: AppColors.success),
+                    SizedBox(width: 8),
+                    Text('Inspección finalizada — solo lectura',
+                        style: TextStyle(fontSize: 13, color: AppColors.success, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  InfoTab(booking: booking),
+                  ChecklistTab(bookingId: booking.id, readOnly: booking.isFinalized),
+                  SummaryTab(booking: booking),
+                ],
+              ),
+            ),
           ],
         ),
       ),

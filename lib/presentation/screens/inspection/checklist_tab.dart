@@ -8,7 +8,8 @@ import 'package:app_flutter_verificarlo/presentation/widgets/voice_button.dart';
 
 class ChecklistTab extends ConsumerStatefulWidget {
   final int bookingId;
-  const ChecklistTab({super.key, required this.bookingId});
+  final bool readOnly;
+  const ChecklistTab({super.key, required this.bookingId, this.readOnly = false});
 
   @override
   ConsumerState<ChecklistTab> createState() => _ChecklistTabState();
@@ -59,6 +60,7 @@ class _ChecklistTabState extends ConsumerState<ChecklistTab>
               return _CategoryContent(
                 category: cat,
                 bookingId: widget.bookingId,
+                readOnly: widget.readOnly,
               );
             }).toList(),
           ),
@@ -72,8 +74,9 @@ class _ChecklistTabState extends ConsumerState<ChecklistTab>
 class _CategoryContent extends ConsumerWidget {
   final InspectionCategory category;
   final int bookingId;
+  final bool readOnly;
 
-  const _CategoryContent({required this.category, required this.bookingId});
+  const _CategoryContent({required this.category, required this.bookingId, this.readOnly = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -111,14 +114,15 @@ class _CategoryContent extends ConsumerWidget {
         ),
 
         // "Todo OK" shortcut
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: () => notifier.setAllOk(category.items),
-            icon: const Icon(Icons.check_circle, size: 16),
-            label: const Text('Todo OK', style: TextStyle(fontSize: 13)),
+        if (!readOnly)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => notifier.setAllOk(category.items),
+              icon: const Icon(Icons.check_circle, size: 16),
+              label: const Text('Todo OK', style: TextStyle(fontSize: 13)),
+            ),
           ),
-        ),
 
         // Subcategory sections
         for (final entry in grouped.entries) ...[
@@ -132,6 +136,7 @@ class _CategoryContent extends ConsumerWidget {
               item: item,
               result: checkState.results[item.id],
               allowed: category.allowedStatuses,
+              readOnly: readOnly,
               onStatusChanged: (s) => notifier.setStatus(item.id, s),
               onCommentChanged: (c) => notifier.setComment(item.id, c),
               onChipToggled: (c) => notifier.toggleChip(item.id, c),
@@ -199,6 +204,7 @@ class _ItemTile extends StatefulWidget {
   final InspectionItem item;
   final ItemResult? result;
   final List<ItemStatus> allowed;
+  final bool readOnly;
   final ValueChanged<ItemStatus?> onStatusChanged;
   final ValueChanged<String> onCommentChanged;
   final ValueChanged<String> onChipToggled;
@@ -207,6 +213,7 @@ class _ItemTile extends StatefulWidget {
     required this.item,
     required this.result,
     required this.allowed,
+    this.readOnly = false,
     required this.onStatusChanged,
     required this.onCommentChanged,
     required this.onChipToggled,
@@ -227,14 +234,7 @@ class _ItemTileState extends State<_ItemTile> {
         TextEditingController(text: widget.result?.comment ?? '');
   }
 
-  @override
-  void didUpdateWidget(covariant _ItemTile old) {
-    super.didUpdateWidget(old);
-    final newComment = widget.result?.comment ?? '';
-    if (_commentController.text != newComment) {
-      _commentController.text = newComment;
-    }
-  }
+  // ponytail: no didUpdateWidget sync — controller is source of truth, state stays in sync via onChanged
 
   @override
   void dispose() {
@@ -263,7 +263,7 @@ class _ItemTileState extends State<_ItemTile> {
           StatusButtons(
             selected: status,
             allowed: widget.allowed,
-            onChanged: widget.onStatusChanged,
+            onChanged: widget.readOnly ? null : widget.onStatusChanged,
           ),
           // Quick-response chips — shown on observación/defecto
           if (showChips && chips.isNotEmpty) ...[
@@ -274,7 +274,7 @@ class _ItemTileState extends State<_ItemTile> {
               children: chips.map((chip) {
                 final isSelected = selectedChips.contains(chip);
                 return GestureDetector(
-                  onTap: () => widget.onChipToggled(chip),
+                  onTap: widget.readOnly ? null : () => widget.onChipToggled(chip),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 4),
@@ -308,13 +308,22 @@ class _ItemTileState extends State<_ItemTile> {
           const SizedBox(height: 6),
           TextField(
             controller: _commentController,
-            onChanged: widget.onCommentChanged,
+            onChanged: widget.readOnly ? null : widget.onCommentChanged,
+            readOnly: widget.readOnly,
             decoration: InputDecoration(
               hintText: 'Comentario (opcional)...',
               isDense: true,
               contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              suffixIcon: VoiceButton(
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              suffixIcon: widget.readOnly ? null : VoiceButton(
                 onListeningChanged: (listening) {
                   if (listening) {
                     final t = _commentController.text;
@@ -334,7 +343,8 @@ class _ItemTileState extends State<_ItemTile> {
                   const BoxConstraints(minWidth: 36, minHeight: 36),
             ),
             style: const TextStyle(fontSize: 13),
-            maxLines: 1,
+            minLines: 1,
+            maxLines: 3,
           ),
           const Divider(height: 16),
         ],

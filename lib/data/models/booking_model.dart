@@ -106,6 +106,8 @@ class BookingModel {
     );
   }
 
+  bool get isFinalized => completedAt != null;
+
   String get vehicleDisplay => '$vehicleBrand $vehicleModel $vehicleYear';
 
   String get code {

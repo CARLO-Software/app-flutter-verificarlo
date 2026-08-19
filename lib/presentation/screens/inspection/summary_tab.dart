@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
@@ -11,6 +12,7 @@ import 'package:app_flutter_verificarlo/core/constants/app_colors.dart';
 import 'package:app_flutter_verificarlo/core/network/api_client.dart';
 import 'package:app_flutter_verificarlo/core/services/checklist_service.dart';
 import 'package:app_flutter_verificarlo/core/services/verdict_service.dart';
+import 'package:app_flutter_verificarlo/core/storage/local_storage.dart';
 import 'package:app_flutter_verificarlo/data/models/booking_model.dart';
 import 'package:app_flutter_verificarlo/data/models/checklist_models.dart';
 import 'package:app_flutter_verificarlo/presentation/providers/checklist_controller.dart';
@@ -28,16 +30,58 @@ class SummaryTab extends ConsumerStatefulWidget {
   ConsumerState<SummaryTab> createState() => _SummaryTabState();
 }
 
-class _SummaryTabState extends ConsumerState<SummaryTab> {
+class _SummaryTabState extends ConsumerState<SummaryTab>
+    with AutomaticKeepAliveClientMixin {
   final _summaryController = TextEditingController();
   final _costController = TextEditingController();
   final _mileageController = TextEditingController();
   bool _hasSiniestro = false;
   bool _hasKmAdulterado = false;
   String _selectedVerdict = 'APROBADO';
+  Timer? _saveDebounce;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSummary();
+    _summaryController.addListener(_scheduleSave);
+    _costController.addListener(_scheduleSave);
+    _mileageController.addListener(_scheduleSave);
+  }
+
+  void _loadSummary() {
+    final saved = LocalStorage.getSummary(widget.bookingId);
+    if (saved == null) return;
+    _summaryController.text = saved['summary'] as String? ?? '';
+    _costController.text = saved['cost'] as String? ?? '';
+    _mileageController.text = saved['mileage'] as String? ?? '';
+    _hasSiniestro = saved['hasSiniestro'] as bool? ?? false;
+    _hasKmAdulterado = saved['hasKmAdulterado'] as bool? ?? false;
+    _selectedVerdict = saved['selectedVerdict'] as String? ?? 'APROBADO';
+  }
+
+  void _scheduleSave() {
+    _saveDebounce?.cancel();
+    _saveDebounce = Timer(const Duration(milliseconds: 500), _persistSummary);
+  }
+
+  void _persistSummary() {
+    LocalStorage.saveSummary(widget.bookingId, {
+      'summary': _summaryController.text,
+      'cost': _costController.text,
+      'mileage': _mileageController.text,
+      'hasSiniestro': _hasSiniestro,
+      'hasKmAdulterado': _hasKmAdulterado,
+      'selectedVerdict': _selectedVerdict,
+    });
+  }
 
   @override
   void dispose() {
+    _saveDebounce?.cancel();
     _summaryController.dispose();
     _costController.dispose();
     _mileageController.dispose();
@@ -46,6 +90,7 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final checkState = ref.watch(checklistProvider(widget.bookingId));
     final categories = InspectionCategory.buildAll();
 
@@ -60,6 +105,7 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
       catScores[cat.type] = ChecklistService.scoreCategory(results);
     }
 
+    final isFinalized = widget.booking.isFinalized;
     final totalScore = ChecklistService.weightedScore(catScores);
     final overallStatus = ChecklistService.overallStatus(catScores);
     final finalVerdict = VerdictService.finalVerdict(
@@ -130,6 +176,7 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
           TextField(
             controller: _mileageController,
             keyboardType: TextInputType.number,
+            readOnly: isFinalized,
             decoration: const InputDecoration(hintText: 'Ej: 85000', suffixText: 'km', isDense: true),
           ),
           const SizedBox(height: 16),
@@ -138,16 +185,18 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
           Row(
             children: [
               const Expanded(child: Text('Resumen ejecutivo', style: TextStyle(fontWeight: FontWeight.w600))),
-              VoiceButton(onResult: (text) {
-                final current = _summaryController.text;
-                _summaryController.text = current.isEmpty ? text : '$current $text';
-              }),
+              if (!isFinalized)
+                VoiceButton(onResult: (text) {
+                  final current = _summaryController.text;
+                  _summaryController.text = current.isEmpty ? text : '$current $text';
+                }),
             ],
           ),
           const SizedBox(height: 6),
           TextField(
             controller: _summaryController,
             maxLines: 4,
+            readOnly: isFinalized,
             decoration: const InputDecoration(hintText: 'Resumen de la inspección...'),
           ),
           const SizedBox(height: 16),
@@ -158,6 +207,7 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
           TextField(
             controller: _costController,
             keyboardType: TextInputType.number,
+            readOnly: isFinalized,
             decoration: const InputDecoration(prefixText: 'S/ ', hintText: '0.00', isDense: true),
           ),
           const SizedBox(height: 16),
@@ -165,7 +215,7 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
           // Flags
           CheckboxListTile(
             value: _hasSiniestro,
-            onChanged: (v) => setState(() => _hasSiniestro = v ?? false),
+            onChanged: isFinalized ? null : (v) { setState(() => _hasSiniestro = v ?? false); _scheduleSave(); },
             title: const Text('Vehículo con siniestro', style: TextStyle(fontSize: 14)),
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
@@ -173,7 +223,7 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
           ),
           CheckboxListTile(
             value: _hasKmAdulterado,
-            onChanged: (v) => setState(() => _hasKmAdulterado = v ?? false),
+            onChanged: isFinalized ? null : (v) { setState(() => _hasKmAdulterado = v ?? false); _scheduleSave(); },
             title: const Text('Kilometraje adulterado', style: TextStyle(fontSize: 14)),
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
@@ -193,11 +243,11 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
             ),
           RadioGroup<String>(
             groupValue: (_hasSiniestro || _hasKmAdulterado) ? 'NO_APROBADO' : _selectedVerdict,
-            onChanged: (_hasSiniestro || _hasKmAdulterado) ? (val) {} : (val) => setState(() => _selectedVerdict = val ?? _selectedVerdict),
+            onChanged: isFinalized || (_hasSiniestro || _hasKmAdulterado) ? (val) {} : (val) { setState(() => _selectedVerdict = val ?? _selectedVerdict); _scheduleSave(); },
             child: Column(
               children: ['APROBADO', 'OBSERVADO', 'NO_APROBADO'].map((v) => RadioListTile<String>(
                 value: v,
-                toggleable: !(_hasSiniestro || _hasKmAdulterado),
+                toggleable: !isFinalized && !(_hasSiniestro || _hasKmAdulterado),
                 title: Text(v.replaceAll('_', ' '), style: const TextStyle(fontSize: 14)),
                 dense: true,
                 contentPadding: EdgeInsets.zero,
@@ -206,17 +256,18 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
           ),
           const SizedBox(height: 20),
 
-          // Finalize
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _submitting ? null : () => _finalize(finalVerdict),
-              icon: _submitting
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.check_circle),
-              label: Text(_submitting ? 'Enviando...' : 'Finalizar Inspección'),
+          // Finalize — hidden when already done
+          if (!isFinalized)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _submitting ? null : () => _finalize(finalVerdict),
+                icon: _submitting
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.check_circle),
+                label: Text(_submitting ? 'Enviando...' : 'Finalizar Inspección'),
+              ),
             ),
-          ),
           const SizedBox(height: 40),
         ],
       ),
@@ -275,6 +326,16 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
       final reportId = response.data['report']['id'] as int;
 
       // 2. Upload checklist via section: "checklist"
+      final categories = InspectionCategory.buildAll();
+      final itemLookup = <String, InspectionItem>{};
+      final itemCatLookup = <String, String>{};
+      for (final cat in categories) {
+        for (final item in cat.items) {
+          itemLookup[item.id] = item;
+          itemCatLookup[item.id] = cat.name;
+        }
+      }
+
       // ponytail: backend expects prefixes legal-, mec-, car-, int- (dash not underscore, "legal" not "leg")
       String mapKey(String key) => key
           .replaceFirst('leg_', 'legal-')
@@ -286,7 +347,11 @@ class _SummaryTabState extends ConsumerState<SummaryTab> {
       for (final entry in checkState.results.entries) {
         final r = entry.value;
         if (r.status == null) continue;
+        final item = itemLookup[entry.key];
         checklistResults[mapKey(entry.key)] = {
+          'name': item?.name ?? entry.key,
+          'category': itemCatLookup[entry.key] ?? '',
+          'subcategory': item?.subcategory ?? '',
           'status': switch (r.status!) {
             ItemStatus.ok => 'OK',
             ItemStatus.observacion => 'OBSERVACION',

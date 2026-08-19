@@ -5,13 +5,13 @@ import 'package:app_flutter_verificarlo/core/constants/app_colors.dart';
 class StatusButtons extends StatelessWidget {
   final ItemStatus? selected;
   final List<ItemStatus> allowed;
-  final ValueChanged<ItemStatus?> onChanged;
+  final ValueChanged<ItemStatus?>? onChanged;
 
   const StatusButtons({
     super.key,
     required this.selected,
     required this.allowed,
-    required this.onChanged,
+    this.onChanged,
   });
 
   @override
@@ -24,7 +24,7 @@ class StatusButtons extends StatelessWidget {
           padding: const EdgeInsets.only(right: 6),
           child: InkWell(
             borderRadius: BorderRadius.circular(8),
-            onTap: () => onChanged(isSelected ? null : status),
+            onTap: onChanged != null ? () => onChanged!(isSelected ? null : status) : null,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(

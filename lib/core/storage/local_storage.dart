@@ -31,6 +31,20 @@ class LocalStorage {
     await box.delete('report_$reportId');
   }
 
+  // --- Summary backup ---
+
+  static Future<void> saveSummary(int bookingId, Map<String, dynamic> data) async {
+    final box = Hive.box(_checklistBox);
+    await box.put('summary_$bookingId', jsonEncode(data));
+  }
+
+  static Map<String, dynamic>? getSummary(int bookingId) {
+    final box = Hive.box(_checklistBox);
+    final raw = box.get('summary_$bookingId') as String?;
+    if (raw == null) return null;
+    return jsonDecode(raw) as Map<String, dynamic>;
+  }
+
   // --- Sync queue ---
 
   static Future<void> enqueue(Map<String, dynamic> operation) async {
