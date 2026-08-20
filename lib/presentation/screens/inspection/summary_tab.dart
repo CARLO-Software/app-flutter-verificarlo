@@ -337,19 +337,12 @@ class _SummaryTabState extends ConsumerState<SummaryTab>
         }
       }
 
-      // ponytail: backend expects prefixes legal-, mec-, car-, int- (dash not underscore, "legal" not "leg")
-      String mapKey(String key) => key
-          .replaceFirst('leg_', 'legal-')
-          .replaceFirst('mec_', 'mec-')
-          .replaceFirst('car_', 'car-')
-          .replaceFirst('int_', 'int-');
-
       final checklistResults = <String, Map<String, dynamic>>{};
       for (final entry in checkState.results.entries) {
         final r = entry.value;
         if (r.status == null) continue;
         final item = itemLookup[entry.key];
-        checklistResults[mapKey(entry.key)] = {
+        checklistResults[entry.key] = {
           'name': item?.name ?? entry.key,
           'category': itemCatLookup[entry.key] ?? '',
           'subcategory': item?.subcategory ?? '',
@@ -375,7 +368,7 @@ class _SummaryTabState extends ConsumerState<SummaryTab>
         for (final path in entry.value.photoUrls) {
           if (!path.startsWith('http')) {
             try {
-              await photoRepo.upload(reportId, path, mapKey(entry.key));
+              await photoRepo.upload(reportId, path, entry.key);
             } catch (e) {
               photoErrors++;
               debugPrint('Photo upload error: $path → $e');
