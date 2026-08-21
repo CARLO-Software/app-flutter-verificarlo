@@ -49,7 +49,7 @@ class ChecklistNotifier extends StateNotifier<ChecklistState> {
     existing.status = status;
     results[itemId] = existing;
     state = state.copyWith(results: results);
-    _scheduleSave();
+    _saveSync();
   }
 
   void setComment(String itemId, String comment) {
@@ -121,8 +121,16 @@ class ChecklistNotifier extends StateNotifier<ChecklistState> {
 
   @override
   void dispose() {
-    _debounce?.cancel();
+    if (_debounce?.isActive ?? false) {
+      _debounce!.cancel();
+      _saveSync();
+    }
     super.dispose();
+  }
+
+  void _saveSync() {
+    final data = state.results.map((k, v) => MapEntry(k, v.toJson()));
+    LocalStorage.saveChecklist(reportId, data);
   }
 }
 

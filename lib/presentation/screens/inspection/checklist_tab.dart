@@ -246,7 +246,14 @@ class _ItemTileState extends State<_ItemTile> {
         TextEditingController(text: widget.result?.comment ?? '');
   }
 
-  // ponytail: no didUpdateWidget sync — controller is source of truth, state stays in sync via onChanged
+  @override
+  void didUpdateWidget(covariant _ItemTile old) {
+    super.didUpdateWidget(old);
+    final newComment = widget.result?.comment ?? '';
+    if (newComment != _commentController.text) {
+      _commentController.text = newComment;
+    }
+  }
 
   @override
   void dispose() {

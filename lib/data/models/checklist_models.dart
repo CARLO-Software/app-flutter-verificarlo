@@ -1,10 +1,9 @@
 enum ItemStatus {
   ok('OK'),
-  observacion('FAIL'),
-  defecto('FAIL'),
+  observacion('OBSERVACION'),
+  defecto('DEFECTO'),
   noAplica('NO_APLICA');
 
-  // Backend accepts only OK | FAIL | NO_APLICA
   final String apiValue;
   const ItemStatus(this.apiValue);
 
