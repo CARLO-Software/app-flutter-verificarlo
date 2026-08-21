@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 VerifiCARLO Inspector — a Flutter mobile app for vehicle inspection mechanics in Peru. Spanish-language UI. Inspectors log in, receive inspection assignments via push notifications, fill checklists with photos/voice notes, and submit reports. Backend is a Laravel API at `verificarlo.com`.
 
+Dart SDK: `^3.9.2` (supports patterns, records, class modifiers).
+
 ## Commands
 
 ```bash
@@ -15,6 +17,7 @@ flutter test             # run all tests
 flutter test test/widget_test.dart  # run single test
 flutter run              # run on connected device/emulator
 flutter build apk        # build Android release
+dart run flutter_launcher_icons  # regenerate app icons after changing assets/images/icono_amarillo.png
 ```
 
 ## Architecture
@@ -22,7 +25,7 @@ flutter build apk        # build Android release
 **Layer pattern:** `core/` → `data/` → `presentation/`, dependencies flow inward.
 
 - **State management:** Riverpod (`StateNotifier` + `StateNotifierProvider`). Providers live in `presentation/providers/`.
-- **Routing:** GoRouter with auth redirect guard. Routes defined in `app.dart`. Shell route wraps the 4-tab navigation (Dashboard, Schedule, Notifications, Settings). `/inspection/:id` is a full-screen route outside the shell, receives `BookingModel` via `state.extra`.
+- **Routing:** GoRouter with auth redirect guard. Routes defined in `app.dart`. Shell route wraps the 4-tab navigation (Dashboard, Schedule, Notifications, Settings). `/inspection/:id` is a full-screen route outside the shell, receives `BookingModel` via `state.extra`. Auth redirect: `AuthStatus.unknown` → `/splash` (loading screen), unauthenticated → `/login`, authenticated redirects away from `/login` to `/`.
 - **Network:** Singleton `ApiClient` wrapping Dio. Auto-attaches JWT from `SecureStorage`. All endpoints in `core/constants/api_endpoints.dart`.
 - **Storage:** Two layers — `SecureStorage` (flutter_secure_storage) for JWT/user data, `LocalStorage` (Hive) for offline checklist backup and sync queue.
 - **Offline sync:** `SyncService` queues failed report patches to Hive, retries on next launch or manual retry. `enqueueAndSync()` tries online first, falls back to queue.
@@ -51,7 +54,7 @@ Scoring logic lives in `core/services/checklist_service.dart` and `verdict_servi
 
 ## Key Conventions
 
-- All API endpoints are string constants/static methods in `ApiEndpoints` — never hardcode URLs elsewhere.
+- All API endpoints are string constants/static methods in `ApiEndpoints` — never hardcode URLs elsewhere. `nextApiKey` is hardcoded there (PDF generation service) — don't add more secrets to source; existing one is a known debt.
 - Singletons use `static final _instance` pattern (`ApiClient`, `FcmService`).
 - Models use `factory fromJson` / `toJson` pattern, no code generation.
 - UI text is in Spanish — keep it consistent.

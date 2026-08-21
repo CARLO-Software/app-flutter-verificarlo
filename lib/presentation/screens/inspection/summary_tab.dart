@@ -346,12 +346,7 @@ class _SummaryTabState extends ConsumerState<SummaryTab>
           'name': item?.name ?? entry.key,
           'category': itemCatLookup[entry.key] ?? '',
           'subcategory': item?.subcategory ?? '',
-          'status': switch (r.status!) {
-            ItemStatus.ok => 'OK',
-            ItemStatus.observacion => 'OBSERVACION',
-            ItemStatus.defecto => 'DEFECTO',
-            ItemStatus.noAplica => 'NO_APLICA',
-          },
+          'status': r.status!.apiValue,
           if (r.comment.isNotEmpty) 'comment': r.comment,
           if (r.selectedChips.isNotEmpty) 'selectedChips': r.selectedChips,
         };

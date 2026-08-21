@@ -1,4 +1,16 @@
-enum ItemStatus { ok, observacion, defecto, noAplica }
+enum ItemStatus {
+  ok('OK'),
+  observacion('FAIL'),
+  defecto('FAIL'),
+  noAplica('NO_APLICA');
+
+  // Backend accepts only OK | FAIL | NO_APLICA
+  final String apiValue;
+  const ItemStatus(this.apiValue);
+
+  static ItemStatus fromApi(String value) =>
+      ItemStatus.values.firstWhere((e) => e.apiValue == value, orElse: () => ItemStatus.values.byName(value));
+}
 
 enum CategoryType { legal, mecanica, carroceria, interior }
 
@@ -147,10 +159,15 @@ class ItemResult {
         'photoUrls': photoUrls,
       };
 
+  Map<String, dynamic> toApiJson() => {
+        'status': status?.apiValue,
+        'comment': comment,
+      };
+
   factory ItemResult.fromJson(Map<String, dynamic> json) => ItemResult(
         itemId: json['itemId'] as String,
         status: json['status'] != null
-            ? ItemStatus.values.byName(json['status'] as String)
+            ? ItemStatus.fromApi(json['status'] as String)
             : null,
         comment: json['comment'] as String? ?? '',
         selectedChips: (json['selectedChips'] as List?)?.cast<String>() ?? [],
