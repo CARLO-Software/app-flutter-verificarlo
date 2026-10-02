@@ -5,20 +5,24 @@ import 'package:app_flutter_verificarlo/core/storage/secure_storage.dart';
 import 'package:app_flutter_verificarlo/data/models/user_model.dart';
 
 class AuthRepository {
-  final _api = ApiClient.instance;
-
   Future<UserModel> login(String email, String password) async {
-    final response = await _api.post(
+    // Login va a Carlo (sincroniza con Verificarlo internamente)
+    final response = await ApiClient.carlo.post(
       ApiEndpoints.login,
       data: {'email': email, 'password': password},
     );
 
     final data = response.data;
-    print('Login response data: ${response.data}');
-    final token = data['token'] as String;
+    final carloToken = data['token'] as String;
+    final verificarloToken = data['verificarloToken'] as String?;
     final user = UserModel.fromJson(data['user']);
 
-    await SecureStorage.saveToken(token);
+    await SecureStorage.saveCarloToken(carloToken);
+
+    if (verificarloToken != null) {
+      await SecureStorage.saveToken(verificarloToken);
+    }
+
     await SecureStorage.saveUser(jsonEncode(user.toJson()));
 
     return user;

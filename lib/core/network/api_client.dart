@@ -5,14 +5,18 @@ import 'package:app_flutter_verificarlo/core/storage/secure_storage.dart';
 import 'package:app_flutter_verificarlo/core/network/api_exception.dart';
 
 class ApiClient {
-  static final ApiClient _instance = ApiClient._();
+  static final ApiClient _instance = ApiClient._('verificarlo', ApiEndpoints.baseUrl, SecureStorage.getToken);
   static ApiClient get instance => _instance;
 
-  late final Dio dio;
+  static final ApiClient _carlo = ApiClient._('carlo', ApiEndpoints.carloBaseUrl, SecureStorage.getCarloToken);
+  static ApiClient get carlo => _carlo;
 
-  ApiClient._() {
+  late final Dio dio;
+  final String _label;
+
+  ApiClient._(this._label, String baseUrl, Future<String?> Function() tokenGetter) {
     dio = Dio(BaseOptions(
-      baseUrl: ApiEndpoints.baseUrl,
+      baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
       headers: {'Content-Type': 'application/json'},
@@ -20,15 +24,15 @@ class ApiClient {
 
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = await SecureStorage.getToken();
+        final token = await tokenGetter();
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
-        debugPrint('API ${options.method} ${options.path} | token: ${token != null ? '${token.substring(0, 20)}...' : 'NULL'}');
+        debugPrint('[$_label] ${options.method} ${options.path}');
         handler.next(options);
       },
       onError: (error, handler) {
-        debugPrint('API ERROR ${error.response?.statusCode} on ${error.requestOptions.path}: ${error.response?.data}');
+        debugPrint('[$_label] ERROR ${error.response?.statusCode} on ${error.requestOptions.path}: ${error.response?.data}');
         handler.next(error);
       },
     ));
