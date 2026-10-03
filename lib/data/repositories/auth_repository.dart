@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:app_flutter_verificarlo/core/constants/api_endpoints.dart';
 import 'package:app_flutter_verificarlo/core/network/api_client.dart';
 import 'package:app_flutter_verificarlo/core/storage/secure_storage.dart';
@@ -13,6 +14,9 @@ class AuthRepository {
     );
 
     final data = response.data;
+    debugPrint('Login response keys: ${data.keys.toList()}');
+    debugPrint('verificarloToken present: ${data.containsKey('verificarloToken')}');
+    debugPrint('verificarloToken value: ${data['verificarloToken']}');
     final carloToken = data['token'] as String;
     final verificarloToken = data['verificarloToken'] as String?;
     final user = UserModel.fromJson(data['user']);

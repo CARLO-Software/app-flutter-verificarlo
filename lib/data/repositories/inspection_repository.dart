@@ -4,7 +4,7 @@ import 'package:app_flutter_verificarlo/core/network/api_client.dart';
 import 'package:app_flutter_verificarlo/data/models/booking_model.dart';
 
 class InspectionRepository {
-  final _api = ApiClient.instance;
+  final _api = ApiClient.carlo;
 
   Future<List<BookingModel>> getPendingInspections() async {
     final response = await _api.get(
