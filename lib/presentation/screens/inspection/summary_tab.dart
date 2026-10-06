@@ -320,96 +320,17 @@ class _SummaryTabState extends ConsumerState<SummaryTab>
     setState(() => _submitting = true);
 
     try {
-      final api = ApiClient.instance;
-
-      // 1. Create report
-      final response = await api.post(ApiEndpoints.reports, data: {'bookingId': widget.bookingId});
-      final reportId = response.data['report']['id'] as int;
-
-      // 2. Upload checklist via section: "checklist"
-      final categories = InspectionCategory.buildAll();
-      final itemLookup = <String, InspectionItem>{};
-      final itemCatLookup = <String, String>{};
-      for (final cat in categories) {
-        for (final item in cat.items) {
-          itemLookup[item.id] = item;
-          itemCatLookup[item.id] = cat.name;
-        }
+      if (widget.booking.isFromCarlo) {
+        await _submitToCarlo(verdict, checkState);
+      } else {
+        await _submitToVerificarlo(verdict, checkState);
       }
-
-      final checklistResults = <String, Map<String, dynamic>>{};
-      for (final entry in checkState.results.entries) {
-        final r = entry.value;
-        if (r.status == null) continue;
-        final item = itemLookup[entry.key];
-        checklistResults[entry.key] = {
-          'name': item?.name ?? entry.key,
-          'category': itemCatLookup[entry.key] ?? '',
-          'subcategory': item?.subcategory ?? '',
-          'status': r.status!.apiValue,
-          if (r.comment.isNotEmpty) 'comment': r.comment,
-          if (r.selectedChips.isNotEmpty) 'selectedChips': r.selectedChips,
-        };
-      }
-      await api.patch(ApiEndpoints.reportSections(reportId), data: {
-        'section': 'checklist',
-        'data': {'checklistResults': checklistResults},
-      });
-
-      // 3. Upload photos (best-effort, don't block finalization)
-      final photoRepo = PhotoRepository();
-      int photoErrors = 0;
-      for (final entry in checkState.results.entries) {
-        for (final path in entry.value.photoUrls) {
-          if (!path.startsWith('http')) {
-            try {
-              await photoRepo.upload(reportId, path, entry.key);
-            } catch (e) {
-              photoErrors++;
-              debugPrint('Photo upload error: $path → $e');
-            }
-          }
-        }
-      }
-      if (photoErrors > 0 && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$photoErrors foto(s) no se pudieron subir')),
-        );
-      }
-
-      // 4+5. Mark mechanical inspection start → complete
-      final viId = widget.booking.vehicleInspectionId;
-      if (viId != null) {
-        await api.patch(ApiEndpoints.mechanicAction(viId), data: {'action': 'start'});
-        await api.patch(ApiEndpoints.mechanicAction(viId), data: {'action': 'complete'});
-      }
-
-      // 5. Finalize report
-      await api.post(ApiEndpoints.reportComplete(reportId), data: {
-        'mechanicalVerdict': verdict,
-        'hasSiniestro': _hasSiniestro,
-        'hasKilometrajeAdulterado': _hasKmAdulterado,
-        'executiveSummary': _summaryController.text,
-        'estimatedRepairCost': double.tryParse(_costController.text) ?? 0,
-        'mileageAtInspection': int.tryParse(_mileageController.text),
-      });
 
       if (!mounted) return;
 
       ref.invalidate(pendingInspectionsProvider);
       ref.invalidate(completedInspectionsProvider);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Inspección finalizada. Descargando PDF...'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-
-      // 6. Download PDF
-      await _downloadAndOpenPdf();
-
-      if (!mounted) return;
       context.pop();
     } catch (e) {
       if (!mounted) return;
@@ -425,6 +346,149 @@ class _SummaryTabState extends ConsumerState<SummaryTab>
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  Future<void> _submitToCarlo(String verdict, ChecklistState checkState) async {
+    final carloApi = ApiClient.carlo;
+    final viId = widget.booking.vehicleInspectionId;
+    if (viId == null) throw Exception('Sin ID de inspección en Carlo');
+
+    // Build checklist results map
+    final categories = InspectionCategory.buildAll();
+    final itemLookup = <String, InspectionItem>{};
+    final itemCatLookup = <String, String>{};
+    for (final cat in categories) {
+      for (final item in cat.items) {
+        itemLookup[item.id] = item;
+        itemCatLookup[item.id] = cat.name;
+      }
+    }
+
+    final checklistResults = <String, Map<String, dynamic>>{};
+    for (final entry in checkState.results.entries) {
+      final r = entry.value;
+      if (r.status == null) continue;
+      final item = itemLookup[entry.key];
+      checklistResults[entry.key] = {
+        'name': item?.name ?? entry.key,
+        'category': itemCatLookup[entry.key] ?? '',
+        'subcategory': item?.subcategory ?? '',
+        'status': r.status!.apiValue,
+        if (r.comment.isNotEmpty) 'comment': r.comment,
+        if (r.selectedChips.isNotEmpty) 'selectedChips': r.selectedChips,
+      };
+    }
+
+    // Start → complete with full report
+    await carloApi.patch(ApiEndpoints.carloMechanicAction(viId), data: {'action': 'start'});
+    await carloApi.patch(ApiEndpoints.carloMechanicAction(viId), data: {
+      'action': 'complete',
+      'notes': _summaryController.text,
+      'report': {
+        'verdict': verdict,
+        'hasSiniestro': _hasSiniestro,
+        'hasKmAdulterado': _hasKmAdulterado,
+        'estimatedRepairCost': double.tryParse(_costController.text) ?? 0,
+        'mileageAtInspection': int.tryParse(_mileageController.text),
+        'executiveSummary': _summaryController.text,
+        'checklistResults': checklistResults,
+      },
+    });
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Inspección enviada a Carlo'),
+        backgroundColor: AppColors.success,
+      ),
+    );
+  }
+
+  Future<void> _submitToVerificarlo(String verdict, ChecklistState checkState) async {
+    final api = ApiClient.instance;
+
+    // 1. Create report
+    final response = await api.post(ApiEndpoints.reports, data: {'bookingId': widget.bookingId});
+    final reportId = response.data['report']['id'] as int;
+
+    // 2. Upload checklist via section: "checklist"
+    final categories = InspectionCategory.buildAll();
+    final itemLookup = <String, InspectionItem>{};
+    final itemCatLookup = <String, String>{};
+    for (final cat in categories) {
+      for (final item in cat.items) {
+        itemLookup[item.id] = item;
+        itemCatLookup[item.id] = cat.name;
+      }
+    }
+
+    final checklistResults = <String, Map<String, dynamic>>{};
+    for (final entry in checkState.results.entries) {
+      final r = entry.value;
+      if (r.status == null) continue;
+      final item = itemLookup[entry.key];
+      checklistResults[entry.key] = {
+        'name': item?.name ?? entry.key,
+        'category': itemCatLookup[entry.key] ?? '',
+        'subcategory': item?.subcategory ?? '',
+        'status': r.status!.apiValue,
+        if (r.comment.isNotEmpty) 'comment': r.comment,
+        if (r.selectedChips.isNotEmpty) 'selectedChips': r.selectedChips,
+      };
+    }
+    await api.patch(ApiEndpoints.reportSections(reportId), data: {
+      'section': 'checklist',
+      'data': {'checklistResults': checklistResults},
+    });
+
+    // 3. Upload photos (best-effort, don't block finalization)
+    final photoRepo = PhotoRepository();
+    int photoErrors = 0;
+    for (final entry in checkState.results.entries) {
+      for (final path in entry.value.photoUrls) {
+        if (!path.startsWith('http')) {
+          try {
+            await photoRepo.upload(reportId, path, entry.key);
+          } catch (e) {
+            photoErrors++;
+            debugPrint('Photo upload error: $path → $e');
+          }
+        }
+      }
+    }
+    if (photoErrors > 0 && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$photoErrors foto(s) no se pudieron subir')),
+      );
+    }
+
+    // 4. Mark mechanical inspection start → complete
+    final viId = widget.booking.vehicleInspectionId;
+    if (viId != null) {
+      await api.patch(ApiEndpoints.mechanicAction(viId), data: {'action': 'start'});
+      await api.patch(ApiEndpoints.mechanicAction(viId), data: {'action': 'complete'});
+    }
+
+    // 5. Finalize report
+    await api.post(ApiEndpoints.reportComplete(reportId), data: {
+      'mechanicalVerdict': verdict,
+      'hasSiniestro': _hasSiniestro,
+      'hasKilometrajeAdulterado': _hasKmAdulterado,
+      'executiveSummary': _summaryController.text,
+      'estimatedRepairCost': double.tryParse(_costController.text) ?? 0,
+      'mileageAtInspection': int.tryParse(_mileageController.text),
+    });
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Inspección finalizada. Descargando PDF...'),
+        backgroundColor: AppColors.success,
+      ),
+    );
+
+    // 6. Download PDF
+    await _downloadAndOpenPdf();
   }
 
   Future<void> _downloadAndOpenPdf({int attempt = 1}) async {
