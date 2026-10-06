@@ -35,6 +35,9 @@ class BookingModel {
   final int? vehicleInspectionId;
   final String? mechanicalStatus;
 
+  // Source platform
+  final String source;
+
   BookingModel({
     required this.id,
     required this.status,
@@ -57,6 +60,7 @@ class BookingModel {
     this.completedAt,
     this.vehicleInspectionId,
     this.mechanicalStatus,
+    this.source = 'verificarlo',
   });
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
@@ -103,8 +107,11 @@ class BookingModel {
       completedAt: report?['completedAt'] as String?,
       vehicleInspectionId: inspection?['id'] as int?,
       mechanicalStatus: inspection?['mechanicalStatus'] as String?,
+      source: json['source'] as String? ?? 'verificarlo',
     );
   }
+
+  bool get isFromCarlo => source == 'carlo';
 
   bool get isFinalized => completedAt != null;
 

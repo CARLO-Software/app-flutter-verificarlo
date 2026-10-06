@@ -20,7 +20,15 @@ class InspectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const carloColor = Color(0xFF7B1FA2);
+
     return Card(
+      shape: booking.isFromCarlo
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: carloColor, width: 2),
+            )
+          : null,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => _openInspection(context),
@@ -140,7 +148,7 @@ class InspectionCard extends StatelessWidget {
 
               const SizedBox(height: 4),
 
-              // Code
+              // Code + source badge
               Row(
                 children: [
                   const Icon(Icons.tag,
@@ -154,6 +162,25 @@ class InspectionCard extends StatelessWidget {
                       fontSize: 13,
                     ),
                   ),
+                  if (booking.isFromCarlo) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: carloColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'CARLO',
+                        style: TextStyle(
+                          color: carloColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
 
