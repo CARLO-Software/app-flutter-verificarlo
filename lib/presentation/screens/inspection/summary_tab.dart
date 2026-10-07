@@ -10,6 +10,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:app_flutter_verificarlo/core/constants/api_endpoints.dart';
 import 'package:app_flutter_verificarlo/core/constants/app_colors.dart';
 import 'package:app_flutter_verificarlo/core/network/api_client.dart';
+import 'package:app_flutter_verificarlo/core/network/api_exception.dart';
 import 'package:app_flutter_verificarlo/core/services/checklist_service.dart';
 import 'package:app_flutter_verificarlo/core/services/verdict_service.dart';
 import 'package:app_flutter_verificarlo/core/storage/local_storage.dart';
@@ -334,12 +335,9 @@ class _SummaryTabState extends ConsumerState<SummaryTab>
       context.pop();
     } catch (e) {
       if (!mounted) return;
-      String errorDetail = e.toString();
-      if (e is DioException && e.response != null) {
-        final data = e.response!.data;
-        final body = data is List<int> ? utf8.decode(data) : '$data';
-        errorDetail = 'Status ${e.response!.statusCode}: $body';
-      }
+      final errorDetail = e is ApiException && e.statusCode != null
+          ? '${e.message} (código ${e.statusCode})'
+          : '$e';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al finalizar: $errorDetail')),
       );

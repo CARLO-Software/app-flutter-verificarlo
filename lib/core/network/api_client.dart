@@ -71,8 +71,22 @@ class ApiClient {
   }
 
   ApiException _handleError(DioException e) {
-    final data = e.response?.data;
-    final message = data is Map ? (data['error'] ?? data['message'] ?? 'Error desconocido') : 'Error de conexión';
-    return ApiException(message.toString(), statusCode: e.response?.statusCode);
+    final response = e.response;
+    if (response == null) {
+      final msg = switch (e.type) {
+        DioExceptionType.connectionTimeout => 'Tiempo de conexión agotado',
+        DioExceptionType.sendTimeout => 'Tiempo de envío agotado',
+        DioExceptionType.receiveTimeout => 'El servidor no respondió a tiempo',
+        DioExceptionType.connectionError => 'Sin conexión a internet',
+        _ => 'Error de red',
+      };
+      return ApiException(msg);
+    }
+    final data = response.data;
+    if (data is Map) {
+      final msg = data['error'] ?? data['message'] ?? 'Error desconocido';
+      return ApiException(msg.toString(), statusCode: response.statusCode);
+    }
+    return ApiException('Error del servidor (${response.statusCode})', statusCode: response.statusCode);
   }
 }
