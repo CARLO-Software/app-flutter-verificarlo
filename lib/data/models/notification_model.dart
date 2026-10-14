@@ -1,6 +1,6 @@
-// ponytail: fuerza UTC cuando el backend omite la Z
-DateTime _parseUtc(String s) =>
-    DateTime.parse(s.endsWith('Z') ? s : '${s}Z').toLocal();
+// ponytail: backend envía hora Lima sin zona, parsear como local
+DateTime _parseLima(String s) =>
+    DateTime.parse(s.endsWith('Z') ? s.substring(0, s.length - 1) : s);
 
 class NotificationModel {
   final int id;
@@ -29,7 +29,7 @@ class NotificationModel {
         title: json['title'] as String? ?? '',
         message: json['message'] as String? ?? '',
         isRead: json['isRead'] as bool? ?? false,
-        createdAt: _parseUtc(json['createdAt'] as String),
+        createdAt: _parseLima(json['createdAt'] as String),
         bookingId: json['bookingId'] as int?,
         reportId: json['reportId'] as int?,
       );

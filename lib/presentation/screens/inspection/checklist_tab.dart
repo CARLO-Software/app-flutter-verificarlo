@@ -370,6 +370,7 @@ class _ItemTileState extends State<_ItemTile> {
             photoUrls: widget.result?.photoUrls ?? [],
             onAdd: widget.onAddPhoto,
             onRemove: widget.onRemovePhoto,
+            readOnly: widget.readOnly,
           ),
           const Divider(height: 16),
         ],
@@ -382,8 +383,9 @@ class _PhotoRow extends StatelessWidget {
   final List<String> photoUrls;
   final VoidCallback onAdd;
   final ValueChanged<String> onRemove;
+  final bool readOnly;
 
-  const _PhotoRow({required this.photoUrls, required this.onAdd, required this.onRemove});
+  const _PhotoRow({required this.photoUrls, required this.onAdd, required this.onRemove, this.readOnly = false});
 
   @override
   Widget build(BuildContext context) {
@@ -392,7 +394,7 @@ class _PhotoRow extends StatelessWidget {
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
-          if (photoUrls.length < 5)
+          if (!readOnly && photoUrls.length < 5)
             GestureDetector(
               onTap: onAdd,
               child: Container(
@@ -421,18 +423,19 @@ class _PhotoRow extends StatelessWidget {
                     ),
                   ),
                 ),
-                Positioned(
-                  top: 0,
-                  right: 6,
-                  child: GestureDetector(
-                    onTap: () => onRemove(url),
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                      child: const Icon(Icons.close, size: 14, color: Colors.white),
+                if (!readOnly)
+                  Positioned(
+                    top: 0,
+                    right: 6,
+                    child: GestureDetector(
+                      onTap: () => onRemove(url),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                        child: const Icon(Icons.close, size: 14, color: Colors.white),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
         ],
