@@ -377,6 +377,28 @@ class _SummaryTabState extends ConsumerState<SummaryTab>
       };
     }
 
+    // Upload photos to Carlo (best-effort)
+    int photoErrors = 0;
+    for (final entry in checkState.results.entries) {
+      for (final path in entry.value.photoUrls) {
+        if (!path.startsWith('http')) {
+          try {
+            final formData = FormData.fromMap({
+              'photo': await MultipartFile.fromFile(path),
+              'checklist_item_id': entry.key,
+            });
+            await carloApi.dio.post(
+              ApiEndpoints.carloInspectionPhotos(viId),
+              data: formData,
+            );
+          } catch (e) {
+            photoErrors++;
+            debugPrint('Carlo photo upload error: $path → $e');
+          }
+        }
+      }
+    }
+
     // Start → complete with full report
     await carloApi.patch(ApiEndpoints.carloMechanicAction(viId), data: {'action': 'start'});
     await carloApi.patch(ApiEndpoints.carloMechanicAction(viId), data: {
@@ -395,8 +417,10 @@ class _SummaryTabState extends ConsumerState<SummaryTab>
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Inspección enviada a Carlo'),
+      SnackBar(
+        content: Text(photoErrors > 0
+            ? 'Inspección enviada a Carlo ($photoErrors foto(s) fallaron)'
+            : 'Inspección enviada a Carlo'),
         backgroundColor: AppColors.success,
       ),
     );

@@ -30,6 +30,8 @@ class ApiEndpoints {
   // Vehicle Inspections (Carlo)
   static String carloMechanicAction(int id) =>
       '/api/v1/inspections/$id/mechanic';
+  static String carloInspectionPhotos(int id) =>
+      '/api/v1/inspections/$id/photos';
 
   // Booking (Verificarlo)
   static String bookingComplete(int id) => '/api/bookings/$id/complete';
