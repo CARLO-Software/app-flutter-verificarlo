@@ -42,11 +42,13 @@ class ScheduleNotifier extends StateNotifier<ScheduleState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final date = '${state.selectedDate.year}-${state.selectedDate.month.toString().padLeft(2, '0')}-${state.selectedDate.day.toString().padLeft(2, '0')}';
-      final data = await _repo.getSchedule(date: date);
-      final list = (data['bookings'] as List? ?? [])
-          .map((e) => BookingModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-      state = state.copyWith(bookings: list, isLoading: false);
+      final all = await _repo.getSchedule(date: date);
+      final selected = DateTime(state.selectedDate.year, state.selectedDate.month, state.selectedDate.day);
+      final filtered = all.where((b) {
+        final d = DateTime(b.startTime.year, b.startTime.month, b.startTime.day);
+        return d == selected;
+      }).toList();
+      state = state.copyWith(bookings: filtered, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }

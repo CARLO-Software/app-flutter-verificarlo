@@ -113,7 +113,10 @@ class BookingModel {
 
   bool get isFromCarlo => source == 'carlo';
 
-  bool get isFinalized => completedAt != null;
+  bool get isFinalized =>
+      completedAt != null ||
+      mechanicalStatus == 'COMPLETADO' ||
+      status == 'completed';
 
   String get vehicleDisplay => '$vehicleBrand $vehicleModel $vehicleYear';
 

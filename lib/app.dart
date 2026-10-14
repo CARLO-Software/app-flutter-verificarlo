@@ -4,12 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:app_flutter_verificarlo/config/theme.dart';
 import 'package:app_flutter_verificarlo/core/constants/app_colors.dart';
 import 'package:app_flutter_verificarlo/presentation/providers/auth_provider.dart';
-import 'package:app_flutter_verificarlo/presentation/providers/notification_provider.dart';
 import 'package:app_flutter_verificarlo/presentation/screens/login_screen.dart';
 import 'package:app_flutter_verificarlo/presentation/screens/dashboard_screen.dart';
 import 'package:app_flutter_verificarlo/data/models/booking_model.dart';
 import 'package:app_flutter_verificarlo/presentation/screens/inspection_screen.dart';
-import 'package:app_flutter_verificarlo/presentation/screens/notification_screen.dart';
 import 'package:app_flutter_verificarlo/presentation/screens/schedule_screen.dart';
 import 'package:app_flutter_verificarlo/presentation/screens/settings_screen.dart';
 
@@ -52,10 +50,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const ScheduleScreen(),
           ),
           GoRoute(
-            path: '/notifications',
-            builder: (_, __) => const NotificationScreen(),
-          ),
-          GoRoute(
             path: '/settings',
             builder: (_, __) => const SettingsScreen(),
           ),
@@ -79,12 +73,9 @@ class _AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).matchedLocation;
-    final unread = ref.watch(notificationProvider).unreadCount;
-
     final index = switch (location) {
       '/schedule' => 1,
-      '/notifications' => 2,
-      '/settings' => 3,
+      '/settings' => 2,
       _ => 0,
     };
 
@@ -93,28 +84,15 @@ class _AppShell extends ConsumerWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: (i) {
-          final path = ['/', '/schedule', '/notifications', '/settings'][i];
+          final path = ['/', '/schedule', '/settings'][i];
           context.go(path);
         },
         backgroundColor: Colors.white,
         indicatorColor: AppColors.primary.withValues(alpha: 0.2),
-        destinations: [
-          const NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Inicio'),
-          const NavigationDestination(icon: Icon(Icons.calendar_today_outlined), selectedIcon: Icon(Icons.calendar_today), label: 'Agenda'),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: unread > 0,
-              label: Text('$unread', style: const TextStyle(fontSize: 10)),
-              child: const Icon(Icons.notifications_outlined),
-            ),
-            selectedIcon: Badge(
-              isLabelVisible: unread > 0,
-              label: Text('$unread', style: const TextStyle(fontSize: 10)),
-              child: const Icon(Icons.notifications),
-            ),
-            label: 'Notificaciones',
-          ),
-          const NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Perfil'),
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Inicio'),
+          NavigationDestination(icon: Icon(Icons.calendar_today_outlined), selectedIcon: Icon(Icons.calendar_today), label: 'Agenda'),
+          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Perfil'),
         ],
       ),
     );

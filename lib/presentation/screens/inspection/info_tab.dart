@@ -21,9 +21,12 @@ class _InfoTabState extends State<InfoTab> {
 
   bool _editingPlate = false;
 
+  bool get _isFinalized => widget.booking.isFinalized;
+
   bool get _needsPlate =>
-      (widget.booking.vehiclePlate == null && _sentPlate == null && widget.booking.vehicleInspectionId != null)
-      || _editingPlate;
+      !_isFinalized &&
+      ((widget.booking.vehiclePlate == null && _sentPlate == null && widget.booking.vehicleInspectionId != null)
+      || _editingPlate);
 
   Future<void> _submitPlate() async {
     final plate = _plateCtrl.text;
@@ -85,7 +88,8 @@ class _InfoTabState extends State<InfoTab> {
                 children: [
                   const SizedBox(width: 0, child: SizedBox.shrink()),
                   Expanded(child: _InfoRow('Placa', _sentPlate ?? b.vehiclePlate ?? '-')),
-                  IconButton(
+                  if (!_isFinalized)
+                    IconButton(
                       icon: const Icon(Icons.edit, size: 18),
                       onPressed: () => setState(() {
                         _editingPlate = true;
@@ -121,16 +125,17 @@ class _InfoTabState extends State<InfoTab> {
 
           const SizedBox(height: 32),
 
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () {
-                DefaultTabController.of(context).animateTo(1);
-              },
-              icon: const Icon(Icons.arrow_forward),
-              label: const Text('Siguiente'),
+          if (!_isFinalized)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  DefaultTabController.of(context).animateTo(1);
+                },
+                icon: const Icon(Icons.arrow_forward),
+                label: const Text('Siguiente'),
+              ),
             ),
-          ),
           const SizedBox(height: 32),
         ],
       ),

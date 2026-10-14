@@ -1,18 +1,16 @@
 import 'package:app_flutter_verificarlo/core/constants/api_endpoints.dart';
 import 'package:app_flutter_verificarlo/core/network/api_client.dart';
+import 'package:app_flutter_verificarlo/data/models/booking_model.dart';
 
 class ScheduleRepository {
-  final _api = ApiClient.instance;
+  final _carlo = ApiClient.carlo;
 
-  Future<Map<String, dynamic>> getSchedule({String? date}) async {
-    final response = await _api.get(
-      ApiEndpoints.inspectorSchedule,
-      queryParams: date != null ? {'date': date} : null,
+  Future<List<BookingModel>> getSchedule({required String date}) async {
+    final response = await _carlo.get(
+      ApiEndpoints.reports,
+      queryParams: {'date': date},
     );
-    return response.data as Map<String, dynamic>;
-  }
-
-  Future<void> updateSchedule(Map<String, dynamic> data) async {
-    await _api.patch(ApiEndpoints.inspectorSchedule, data: data);
+    final list = response.data['inspections'] as List? ?? [];
+    return list.map((e) => BookingModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 }

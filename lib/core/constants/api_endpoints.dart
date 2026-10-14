@@ -46,6 +46,12 @@ class ApiEndpoints {
   static const String notificationsReadAll = '/api/notifications/all/read';
   static String notificationDelete(int id) => '/api/notifications/$id';
 
+  // Notifications (Carlo)
+  static const String carloNotifications = '/api/v1/notifications';
+  static String carloNotificationRead(int id) => '/api/v1/notifications/$id/read';
+  static const String carloNotificationsReadAll = '/api/v1/notifications/read-all';
+  static String carloNotificationDelete(int id) => '/api/v1/notifications/$id';
+
   // User (Verificarlo)
   static const String userProfile = '/api/user/profile';
   static const String changePassword = '/api/user/change-password';
