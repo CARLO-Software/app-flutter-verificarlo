@@ -25,6 +25,7 @@ class BookingModel {
   // Plan
   final String planTitle;
   final String planType;
+  final String? planColor;
 
   // Report (if exists)
   final int? reportId;
@@ -55,6 +56,7 @@ class BookingModel {
     this.district,
     required this.planTitle,
     required this.planType,
+    this.planColor,
     this.reportId,
     this.reportStatus,
     this.completedAt,
@@ -102,6 +104,7 @@ class BookingModel {
       district: client?['district'] as String?,
       planTitle: plan?['title'] as String? ?? '',
       planType: plan?['type'] as String? ?? '',
+      planColor: plan?['color'] as String?,
       reportId: report?['id'] as int?,
       reportStatus: report?['overallStatus'] as String?,
       completedAt: report?['completedAt'] as String?,
@@ -112,13 +115,15 @@ class BookingModel {
   }
 
   bool get isFromCarlo => source == 'carlo';
+  bool get isPremium => planType == 'premium';
 
   bool get isFinalized =>
       completedAt != null ||
       mechanicalStatus == 'COMPLETADO' ||
       status == 'completed';
 
-  String get vehicleDisplay => '$vehicleBrand $vehicleModel $vehicleYear';
+  String get vehicleDisplay =>
+      '$vehicleBrand $vehicleModel${vehicleYear > 0 ? ' $vehicleYear' : ''}';
 
   String get code {
     final year = startTime.year;

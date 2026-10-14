@@ -21,14 +21,19 @@ class InspectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const carloColor = Color(0xFF7B1FA2);
+    const premiumBg = Color(0xFFFFF8E1);
+    const premiumBorder = Color(0xFFFFD54F);
 
     return Card(
-      shape: booking.isFromCarlo
-          ? RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: carloColor, width: 2),
-            )
-          : null,
+      color: booking.isPremium ? premiumBg : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: booking.isPremium
+            ? const BorderSide(color: premiumBorder, width: 1.5)
+            : booking.isFromCarlo
+                ? const BorderSide(color: carloColor, width: 2)
+                : BorderSide.none,
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => _openInspection(context),
@@ -136,12 +141,18 @@ class InspectionCard extends StatelessWidget {
               // Plan
               Row(
                 children: [
-                  const Icon(Icons.assignment_outlined,
-                      size: 18, color: AppColors.textSecondary),
+                  Icon(
+                    booking.isPremium ? Icons.workspace_premium : Icons.assignment_outlined,
+                    size: 18,
+                    color: booking.isPremium ? const Color(0xFFFF8F00) : AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     booking.planTitle,
-                    style: const TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(
+                      color: booking.isPremium ? const Color(0xFFE65100) : AppColors.textSecondary,
+                      fontWeight: booking.isPremium ? FontWeight.w600 : FontWeight.normal,
+                    ),
                   ),
                 ],
               ),
